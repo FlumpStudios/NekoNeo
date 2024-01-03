@@ -1,35 +1,30 @@
+#include <assert.h>
 #include "raylib.h"
 #include "screens.h"
 #include "level.h"
 #include <stdint.h>
 #include <stdio.h>
-#include "utils.h"
-#include <assert.h>
+#include "rl_utils.h"
+#include "core.h"
+#include "neko_utils.h"
+#include "constants.h"
+#include <string.h>
 
-#define MAX_COLUMNS 20
-#define BLOCK_HEIGHT 0.25f
-#define DEBUG_LEVEL 99
-#define WALL_TEXTURE_COUNT 15
-#define ITEM_COUNT 13
-#define WEAPON_COUNT 5
-#define MAX_STEP_HEIGHT 7
-#define DRAW_PLAYER false
-#define MAP_ARRAY_SIZE 4096
-#define MAX_ELEMENTS 128
-#define WORKING_DIR ""
-#define DOOR_MASK 0xc0
+static uint32_t _blockCount;
+static uint16_t _elementCounts;
 
 static bool drawHelpText = 0;
 static int framesCounter = 0;
 static int finishScreen = 0;
 static int cameraMode = CAMERA_FREE;
 static uint8_t currentLevel = DEBUG_LEVEL;
-static SFG_Level level;
+static SFG_Level* level;
 static Camera camera = { 0 };
 
 Texture2D wallTextures[WALL_TEXTURE_COUNT];
 Texture2D itemTextures[ITEM_COUNT];
 Texture2D weaponsTextures[WEAPON_COUNT];
+
 Texture2D spiderEnemy;
 Texture2D destroyerEnemy;
 Texture2D warriorEnemy;
@@ -38,8 +33,173 @@ Texture2D enderEnemy;
 Texture2D turretEnemy;
 Texture2D exploderEnemy;
 Texture2D blocker;
-
 Shader alphaDiscard;
+
+Element* items;
+MapBlock* mapBlocks;
+
+Texture GetTextureFromElementType(uint8_t i)
+{
+    assert(i > 0);
+
+    if (i <= ITEM_COUNT)
+    {
+        return itemTextures[i - 1];
+    }
+
+    else
+    {
+        switch (i)
+        {
+        case 0x0d:
+        case 0x0e:
+        case 0x0f:
+            return itemTextures[12];
+
+        case 0x20:
+            return spiderEnemy;
+        case 0x21:
+            return destroyerEnemy;
+        case 0x22:
+            return warriorEnemy;
+        case 0x23:
+            return plasmaBotEnemy;
+        case 0x24:
+            return enderEnemy;
+        case 0x25:
+            return turretEnemy;
+        case 0x26:
+            return exploderEnemy;
+        case 0x13:
+            return blocker;
+        }
+    }
+    return itemTextures[0];
+}
+
+void InitElements(void)
+{
+    size_t size = sizeof(Element) * (MAP_ARRAY_SIZE * MAX_CEIL_HEIGHT);
+    if (!items)
+    {
+        items = MemAlloc(size);
+        if (!items)
+        {
+            TraceLog(LOG_ERROR, "Memory allocation failed on items!");
+            return;
+        }
+    }
+    memset(items, 0, size);
+
+    for (size_t i = 0; i < MAX_ELEMENTS; i++)
+    {
+        if (level->elements[i].type > 0)
+        {
+            float size = 1.f;
+
+            int mapArrayindex = GetMapArrayIndex(level->elements[i].coords[0], level->elements[i].coords[1]);
+
+            uint8_t stepSize = GetMapArrayDrawHeightFromIndex(level->mapArray[mapArrayindex], level->ceilHeight);
+
+            if (stepSize > MAX_STEP_HEIGHT)
+            {
+                stepSize = 0;
+            }
+
+            Texture t = GetTextureFromElementType(level->elements[i].type);
+            float h = 0.25f * stepSize;
+
+            items[i].position = (Vector3){ level->elements[i].coords[1] + 0.5, (size / 2) + h, level->elements[i].coords[0] + 0.5 };
+            items[i].texture = t;
+            items[i].size = size;
+            _elementCounts++;
+        }
+    }
+}
+
+void InitWalls(void)
+{
+    size_t size = sizeof(MapBlock) * (MAP_ARRAY_SIZE * MAX_CEIL_HEIGHT);
+    if (!mapBlocks)
+    {
+        mapBlocks = MemAlloc(size);
+        if (!mapBlocks)
+        {
+            TraceLog(LOG_ERROR, "Memory allocation failed on mapblocks!");
+            return;
+        }
+    }
+    memset(mapBlocks, 0, size);
+
+    uint8_t col = 0;
+    uint8_t row = 0;
+
+    for (size_t i = 0; i < MAP_ARRAY_SIZE; i++)
+    {
+        if (i > 0 && i % 64 == 0)
+        {
+            row++;
+            col = 0;
+        }
+
+        if (level->mapArray[i] > 0)
+        {
+            uint8_t v = level->mapArray[i];
+            uint8_t height = GetMapArrayDrawHeightFromIndex(level->mapArray[i], level->ceilHeight);
+            uint8_t textureIndexRef = GetTetureIndex(level->mapArray[i]);
+            uint8_t textureIndex = level->textureIndices[textureIndexRef];
+
+            for (uint8_t k = 0; k < height; k++)
+            {
+                uint8_t skipCount = 0;
+                float drawHeight = BLOCK_HEIGHT;
+
+                for (uint8_t j = 4; j > 1; j--)
+                {
+                    if ((height - k) >= j)
+                    {
+                        drawHeight = BLOCK_HEIGHT * j;
+                        skipCount = j - 1;
+                        break;
+                    }
+                }
+
+                float x = 1.0f * row;
+                float y = 1.0f;
+                float z = 1.0f * col;
+
+                bool isDoor = v >= DOOR_MASK;
+
+                if (isDoor)
+                {
+                    if (k < 4)
+                    {
+                        mapBlocks[_blockCount].position = (Vector3){ x + 0.5f, (k * BLOCK_HEIGHT) + drawHeight / 2, z + 0.5f };
+                        mapBlocks[_blockCount].texture = wallTextures[level->doorTextureIndex];
+                        
+                    }
+                    else
+                    {
+                        mapBlocks[_blockCount].position = (Vector3){ x + 0.5f, (k * BLOCK_HEIGHT) + drawHeight / 2, z + 0.5f };
+                        mapBlocks[_blockCount].texture = wallTextures[textureIndex];
+                        
+                    }
+                }
+                else
+                {
+                    mapBlocks[_blockCount].position = (Vector3){ x + 0.5f, (k * BLOCK_HEIGHT) + drawHeight / 2, z + 0.5f };
+                    mapBlocks[_blockCount].texture = wallTextures[textureIndex];
+                    
+                }
+
+                mapBlocks[_blockCount].drawHeight = drawHeight;
+                _blockCount++;
+                k += skipCount;
+            }
+        }
+        col++;
+    }
+}
 
 void InitGameplayScreen(void)
 {
@@ -47,14 +207,25 @@ void InitGameplayScreen(void)
 #ifdef DEBUG
     alphaDiscard = LoadShader(NULL, "C:/Projects/NekoNeo/game/src/alphaDiscard.fs");
     
-    if (!SFG_loadLevelFromFile(&level, currentLevel))
-    {
-        TraceLog(LOG_ERROR, "Error Loading level from file");
+    level = MemAlloc(sizeof(SFG_Level));
+
+    if (level == NULL) {
+        TraceLog(LOG_ERROR, "Memory allocation failed on level!");
     }
-    else
-    {
-        TraceLog(LOG_INFO, "Level loaded OK");
+    else {
+        memset(level, 0, sizeof(SFG_Level));
+
+        if (!SFG_loadLevelFromFile(level, currentLevel))
+        {
+            TraceLog(LOG_ERROR, "Error Loading level from file");
+        }
+        else
+        {
+            TraceLog(LOG_INFO, "Level loaded OK");
+        }
     }
+
+    
 
     for (uint8_t i = 0; i < WALL_TEXTURE_COUNT; i++)
     {
@@ -133,159 +304,23 @@ void InitGameplayScreen(void)
     framesCounter = 0;
     finishScreen = 0;
 
-    camera.position = (Vector3){ level.playerStart[1] , 1.0f, level.playerStart[0] };
+    if (level)
+    {
+        camera.position = (Vector3){ level->playerStart[1] , 1.0f, level->playerStart[0] };
+    }
+
+    InitWalls();
+    InitElements();
+
     camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };      
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          
     camera.fovy = 60.0f;                                
-    camera.projection = CAMERA_PERSPECTIVE;
+    camera.projection = CAMERA_PERSPECTIVE;    
     DisableCursor();
 }
 
-int GetMapArrayIndex(uint8_t col, uint8_t row)
-{
-    int index = (row * 64) + col;
-    return index;
-}
 
-uint8_t GetTetureIndex(uint8_t i)
-{
-    uint8_t r = 0;
-    switch (i)
-    {
-    case 1 | DOOR_MASK:
-        r = 0;
-        break;
-    case 2 | DOOR_MASK:
-        r = 1;
-        break;
-    case 3 | DOOR_MASK:
-        r = 2;
-        break;
-    case 4 | DOOR_MASK:
-        r = 3;
-        break;
-    case 5 | DOOR_MASK:
-        r = 4;
-        break;
-    case 6 | DOOR_MASK:
-        r = 5;
-        break;
-    case 7 | DOOR_MASK:
-        r = 6;
-        break;
-    case 8:
-    case 8 + 7:
-    case 8 + 14:
-    case 8 + 21:
-    case 8 + 28:
-    case 8 + 35:
-    case 8 + 42:
-    case 8 + 49:
-        r = 0;
-        break;
-    case 9:
-    case 9 + 7:
-    case 9 + 14:
-    case 9 + 21:
-    case 9 + 28:
-    case 9 + 35:
-    case 9 + 42:
-    case 9 + 49:
-        r = 1;
-        break;
-    case 10:
-    case 10 + 7:
-    case 10 + 14:
-    case 10 + 21:
-    case 10 + 28:
-    case 10 + 35:
-    case 10 + 42:
-    case 10 + 49:
-        r = 2;
-        break;
-    case 11:
-    case 11 + 7:
-    case 11 + 14:
-    case 11 + 21:
-    case 11 + 28:
-    case 11 + 35:
-    case 11 + 42:
-    case 11 + 49:        
-        r = 3;
-        break;
-    case 12:
-    case 12 + 7:
-    case 12 + 14:
-    case 12 + 21:
-    case 12 + 28:
-    case 12 + 35:
-    case 12 + 42:
-    case 12 + 49:
-        r = 4;
-        break;
-    case 13:
-    case 13 + 7:
-    case 13 + 14:
-    case 13 + 21:
-    case 13 + 28:
-    case 13 + 35:
-    case 13 + 42:
-    case 13 + 49:
-        r = 5;
-        break;
-    case 14:
-    case 14 + 7:
-    case 14 + 14:
-    case 14 + 21:
-    case 14 + 28:
-    case 14 + 35:
-    case 14 + 42:
-    case 14 + 49:
-        r = 6;
-        break;
-    }
 
-    return r;
-}
-
-Texture GetTextureFromElementType(uint8_t i)
-{
-    assert(i > 0);
-   
-    if (i <= ITEM_COUNT)
-    {
-        return itemTextures[i - 1];
-    }
-
-    else
-    {
-        switch (i)
-        {
-            case 0x0d:
-            case 0x0e:
-            case 0x0f:
-                return itemTextures[12];
-
-            case 0x20:
-                return spiderEnemy;
-            case 0x21:
-                return destroyerEnemy;
-            case 0x22:
-                return warriorEnemy;
-            case 0x23:
-                return plasmaBotEnemy;
-            case 0x24:
-                return enderEnemy;
-            case 0x25:
-                return turretEnemy;
-            case 0x26:
-                return exploderEnemy;
-            case 0x13:
-                return blocker;
-        }
-    }
-    return itemTextures[0];    
-}
 
 // Gameplay Screen Update logic
 void UpdateGameplayScreen(void)
@@ -347,7 +382,6 @@ void UpdateGameplayScreen(void)
         }   
     }
 
-    // Stop the rotation that e and q have by default
     if (IsKeyDown(KEY_E))
     {
         camera.position.y += 0.1f;
@@ -364,21 +398,6 @@ void UpdateGameplayScreen(void)
 
 
 
-uint8_t GetMapArrayDrawHeightFromIndex(uint8_t index)
-{
-    if (index < 15 || index > 63) { return level.ceilHeight; }
-
-    if (index >= 15 && index < 22) { return 1; }
-    if (index >= 22 && index < 29) { return 2; }
-    if (index >= 29 && index < 36) { return 3; }
-    if (index >= 36 && index < 43) { return 4; }
-    if (index >= 43 && index < 50) { return 5; }
-    if (index >= 50 && index < 57) { return 6; }
-    if (index >= 57 && index < 64) { return 7; }
-    return level.ceilHeight;
-}
-
-
 // Gameplay Screen Draw logic
 void DrawGameplayScreen(void)
 {
@@ -386,7 +405,7 @@ void DrawGameplayScreen(void)
 
     BeginMode3D(camera);
 
-    DrawPlane((Vector3) { 0.0f, -0.1f, 0.0f }, (Vector2) { 256.0f, 256.0f }, GRAY); // Draw ground
+    DrawPlane((Vector3) { 0.0f, -0.1f, 0.0f }, (Vector2) { 256.0f, 256.0f }, GRAY);
 
     DrawGrid(4096, 1.0f);
     DrawWalls();
@@ -402,8 +421,8 @@ void DrawGameplayScreen(void)
 
     EndMode3D();
 
+    // UI
     DrawCrossHair();
-
     if (drawHelpText)
     {
         DrawDebugData();
@@ -455,96 +474,35 @@ void DrawDebugData(void)
 
 void DrawElements(void)
 {
-    for (size_t i = 0; i < MAX_ELEMENTS; i++)
+    for (size_t i = 0; i < _elementCounts; i++)
     {
-        if (level.elements[i].type > 0)
-        {
-            float size = 1.f;
-
-            int mapArrayindex = GetMapArrayIndex(level.elements[i].coords[0], level.elements[i].coords[1]);
-
-            uint8_t stepSize = GetMapArrayDrawHeightFromIndex(level.mapArray[mapArrayindex]);
-
-            if (stepSize > MAX_STEP_HEIGHT)
-            {
-                stepSize = 0;
-            }
-
-            float h = 0.25f * stepSize;
-
-            Texture t = GetTextureFromElementType(level.elements[i].type);
-
-            DrawBillboard(camera, t, (Vector3) { level.elements[i].coords[1] + 0.5, (size / 2) + h, level.elements[i].coords[0] + 0.5 }, size, WHITE);
-        }
+        DrawBillboard(camera, items[i].texture, items[i].position, items[i].size, WHITE);
     }
 }
 
 void DrawWalls(void)
-{
-    uint8_t col = 0;
-    uint8_t row = 0;
-
-    for (size_t i = 0; i < MAP_ARRAY_SIZE; i++)
+{   
+    if (mapBlocks)
     {
-        if (i > 0 && i % 64 == 0)
+        for (size_t i = 0; i < _blockCount; i++)
         {
-            row++;
-            col = 0;
-        }
-
-        if (level.mapArray[i] > 0)
-        {
-            uint8_t v = level.mapArray[i];
-            uint8_t height = GetMapArrayDrawHeightFromIndex(level.mapArray[i]);
-            uint8_t textureIndexRef = GetTetureIndex(level.mapArray[i]);
-            uint8_t textureIndex = level.textureIndices[textureIndexRef];
-
-            for (uint8_t k = 0; k < height; k++)
-            {
-                uint8_t skipCount = 0;
-                float drawHeight = BLOCK_HEIGHT;
-
-                for (uint8_t j = 4; j > 1; j--)
-                {
-                    if ((height - k) >= j)
-                    {
-                        drawHeight = BLOCK_HEIGHT * j;
-                        skipCount = j-1;
-                        break;
-                    }                
-                }
-
-                float x = 1.0f * row;
-                float y = 1.0f;
-                float z = 1.0f * col;
-                
-                bool isDoor = v >= DOOR_MASK;
-                if (isDoor)
-                {
-                    if (k < 4)
-                    {
-                        UTL_DrawCubeTexture(wallTextures[level.doorTextureIndex], (Vector3) { x + 0.5f, (k * BLOCK_HEIGHT) + drawHeight / 2, z + 0.5f }, 1.0f, drawHeight, 1.0f, WHITE);
-                    }
-                    else 
-                    {
-                        UTL_DrawCubeTexture(wallTextures[textureIndex], (Vector3) { x + 0.5f, (k * BLOCK_HEIGHT) + drawHeight / 2, z + 0.5f }, 1.0f, drawHeight, 1.0f, WHITE);
-                    }
-                }
-                else
-                {
-                    UTL_DrawCubeTexture(wallTextures[textureIndex], (Vector3) { x + 0.5f, (k * BLOCK_HEIGHT) + drawHeight / 2, z + 0.5f }, 1.0f, drawHeight, 1.0f, WHITE);
-                }
-                k += skipCount;
+            if (mapBlocks[i].drawHeight > 0)
+            {            
+                UTL_DrawCubeTexture(mapBlocks[i].texture, mapBlocks[i].position, 1.0f, mapBlocks[i].drawHeight, 1.0f, WHITE);
             }
         }
-        col++;
     }
 }
+
+
 
 // Gameplay Screen Unload logic
 void UnloadGameplayScreen(void)
 {
     // TODO: Unload GAMEPLAY screen variables here!
+    MemFree(level);
+    level = NULL;
+    _blockCount = 0;
 }
 
 // Gameplay Screen should finish?

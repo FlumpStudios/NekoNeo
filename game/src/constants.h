@@ -1,0 +1,16 @@
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+
+#define DOOR_MASK 0xc0
+#define BLOCK_HEIGHT 0.25f
+#define DEBUG_LEVEL 99
+#define WALL_TEXTURE_COUNT 15
+#define ITEM_COUNT 13
+#define WEAPON_COUNT 5
+#define MAX_STEP_HEIGHT 7
+#define DRAW_PLAYER false
+#define MAP_ARRAY_SIZE 4096
+#define MAX_ELEMENTS 128
+#define WORKING_DIR ""
+#define MAX_CEIL_HEIGHT 31
+#endif
