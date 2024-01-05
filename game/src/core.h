@@ -2,6 +2,7 @@
 #define CORE_H
 #include "raylib.h"
 #include <stdio.h>
+#include <stdint.h>
 
 enum ElementTypes {
     Enemies,
@@ -9,6 +10,17 @@ enum ElementTypes {
     Pickups,    
 };
 
+enum Mode {
+  Mode_Editor,
+  Mode_Game,
+  Mode_Scene
+};
+
+enum EditorRenderMode {
+    RenerMode_Textured,
+    RenerMode_Colored,
+    RenerMode_CollisionBlock
+};
 
 static struct BaseEntity {
     Vector3 position;                
@@ -19,6 +31,7 @@ static struct BaseEntity {
 typedef struct {
     struct BaseEntity;
     float drawHeight;
+    BoundingBox boundingBox;
 } MapBlock;
 
 typedef struct {
@@ -26,5 +39,13 @@ typedef struct {
     enum ElementTypes type;
     float size;
 } Element;
+
+
+typedef struct {
+    Camera* camera;
+    int arrayCell;
+    bool wallCollision;
+    uint8_t floorHeight;
+} DebugInfo;
 
 #endif
