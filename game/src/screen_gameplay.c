@@ -45,8 +45,9 @@ Shader alphaDiscard;
 Element* items;
 MapBlock* mapBlocks;
 
-Vector3 selectionLocation = { 0.0f, 0.0f, 0.0f };
-bool objectHasBeenSelected = false;
+SelectedEntity selectionLocation = { 0 };
+
+
 
 
 void SetSelectionBlockLocation(void)
@@ -68,14 +69,16 @@ void SetSelectionBlockLocation(void)
             {
                 if (collision.distance < dist || dist < 0)
                 {   dist = collision.distance;
-                    selectionLocation = mapBlocks[i].position;
+                    selectionLocation.position = mapBlocks[i].position;
+                    selectionLocation.hasSelection = true;
+                    selectionLocation.blockIndex = i;
+                    selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
                 }
-                objectHasBeenSelected = true;
             }
         }
         if(dist < 0)
         { 
-            objectHasBeenSelected = false;
+            selectionLocation.hasSelection = false;
         }
     }
 }
@@ -188,7 +191,7 @@ void InitElements(void)
     }
 }
 
-void InitWalls(void)
+void InitWalls(bool saveOnComplete)
 {
     size_t size = sizeof(MapBlock) * (MAP_ARRAY_SIZE * MAX_CEIL_HEIGHT);
     if (!mapBlocks)
@@ -262,7 +265,7 @@ void InitWalls(void)
                 }
 
                 mapBlocks[_blockCount].drawHeight = drawHeight;
-
+                mapBlocks[_blockCount].textureIndex = textureIndex;
                 Vector3 wallPos = mapBlocks[_blockCount].position;
                 Vector3 wallSize = { 1.0f,mapBlocks[_blockCount].drawHeight,1.0f };
 
@@ -288,6 +291,14 @@ void InitWalls(void)
         col++;
     }
 
+    if (saveOnComplete && SaveLevel(level))
+    {
+        TraceLog(LOG_ERROR, "Level saved on wall update");
+    }
+    else
+    {
+        TraceLog(LOG_ERROR, "Error saving level to file");
+    }
 }
 
 void InitGameplayScreen(void)
@@ -404,7 +415,7 @@ void InitGameplayScreen(void)
         camera.position = (Vector3){ level->playerStart[0] , 1.0f, level->playerStart[1]};
     }
 
-    InitWalls();
+    InitWalls(false);
     InitElements();
 
     camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };
@@ -417,8 +428,7 @@ void InitGameplayScreen(void)
 
 void UpdateFloorHeight()
 {
-    int arrayPos = GetMapIndeFromPosition(selectionLocation.x, selectionLocation.z);
-    auto e = level->mapArray[arrayPos];
+    auto e = level->mapArray[selectionLocation.mapArrayIndex];
     uint8_t h = GetMapArrayHeightFromIndex(e, level->ceilHeight);
     _floorHeight = h;
 }
@@ -437,6 +447,48 @@ void UpdateGameplayScreen(void)
         if(currentEditorMode == Mode_Editor)
         { 
             drawHelpText = !drawHelpText;
+        }
+    }
+
+    if (IsKeyPressed(KEY_T))
+    {
+        
+        // HACK: insanely inefficient way to update the blocks, basically regenerating every block. At the moment just want something functiona.
+        // TODO: Do this properly
+
+        if (selectionLocation.hasSelection)
+        {
+            int i = level->mapArray[selectionLocation.mapArrayIndex];
+            
+            i++;
+            if ((i-1) % 7 == 0)
+            {
+                i -=7;
+            }
+            level->mapArray[selectionLocation.mapArrayIndex] = i;
+            free(mapBlocks);
+            mapBlocks = NULL;
+            _blockCount = 0;
+            InitWalls(true);
+        }
+    }
+
+    if (IsKeyPressed(KEY_RIGHT_BRACKET))
+    {   
+        if (selectionLocation.hasSelection)
+        {
+            int i = level->mapArray[selectionLocation.mapArrayIndex];
+            i += 7;
+            if (i >= 64)
+            {
+                i-=63;
+                i += 7;
+            }
+            level->mapArray[selectionLocation.mapArrayIndex] = i;
+            free(mapBlocks);
+            mapBlocks = NULL;
+            _blockCount = 0;
+            InitWalls(true);
         }
     }
 
@@ -467,7 +519,7 @@ void UpdateGameplayScreen(void)
         cameraMode = CAMERA_FIRST_PERSON;
         camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
 
-        int arrayPos = GetMapIndeFromPosition(camera.position.x, camera.position.z);
+        int arrayPos = GetMapIndeFromPosition(camera.position);
         auto e = level->mapArray[arrayPos];
         uint8_t h = GetMapArrayHeightFromIndex(e, 0);
         
@@ -526,12 +578,12 @@ void DrawGameplayScreen(void)
 
     if (currentEditorMode == Mode_Editor)
     {
-        if (objectHasBeenSelected)
+        if (selectionLocation.hasSelection)
         {
             int mod = _floorHeight % 4 > 0;
             for (size_t i = 0; i < ((_floorHeight / 4) + mod); i++)
             {
-                Vector3 vec = { selectionLocation.x,(float)i + 0.5f, selectionLocation.z };
+                Vector3 vec = { selectionLocation.position.x,(float)i + 0.5f, selectionLocation.position.z };
                 DrawCube(vec, 1.005f, 1.005f, 1.005f, TRANS_RED);
                 DrawCubeWires(vec, 1.005, 1.005f, 1.005f, BLACK);
             }
@@ -545,7 +597,6 @@ void DrawGameplayScreen(void)
     EndShaderMode(alphaDiscard);   
     EndMode3D();
 
-
     if (currentEditorMode == Mode_Game)
     {
         float x = (GetScreenWidth() / 2.0f) - ((weaponsTextures[1].width * GUN_SCALE) / 2);
@@ -554,8 +605,7 @@ void DrawGameplayScreen(void)
     }
     else if (drawHelpText && currentEditorMode == Mode_Editor)
     {
-        auto arrayPos = GetMapIndeFromPosition(selectionLocation.x, selectionLocation.z);
-        DebugInfo d = { &camera,arrayPos, _isPlayerClipping, _floorHeight };
+        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _isPlayerClipping, _floorHeight };
         EUI_DrawDebugData(&d);
     }
 

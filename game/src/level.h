@@ -5,6 +5,7 @@
 #define SFG_TILE_DICTIONARY_SIZE 64
 #include <stdint.h>
 #include <stdio.h>
+#include "constants.h"
 
 
 /**
@@ -123,7 +124,7 @@ typedef struct
 {
     SFG_MapArray mapArray;
     SFG_TileDictionary tileDictionary;
-    uint8_t textureIndices[7]; /**< Says which textures are used on the map. There
+    uint8_t textureIndices[TEXTURE_INDICES_COUNT]; /**< Says which textures are used on the map. There
                                can be at most 7 because of 3bit indexing (one
                                value is reserved for special transparent
                                texture). */
@@ -168,6 +169,27 @@ uint8_t SFG_loadLevelFromFile(SFG_Level* buffer, uint8_t level)
     fclose(file);
     return 1;
 }
+
+
+bool SaveLevel(SFG_Level *level)
+{
+#ifdef DEBUG
+    const char* saveLocation ="C:/Projects/NekoEngine/levels/level99.HAD";
+#else
+    const char* saveLocation = "levels/level99.HAD";
+#endif
+    FILE* file = fopen(saveLocation, "wb");
+
+    if (file != NULL) {
+        fwrite(level, sizeof(SFG_Level), 1, file);
+        fclose(file);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 
 
 #endif // guard

@@ -5,9 +5,10 @@
 #include <stdint.h>
 
 enum ElementTypes {
-    Enemies,
-    Weapons,
-    Pickups,    
+    Wall,
+    ENemy,
+    Weapon,
+    Pickup,  
 };
 
 enum Mode {
@@ -22,7 +23,7 @@ enum EditorRenderMode {
     RenerMode_CollisionBlock
 };
 
-static struct BaseEntity {
+struct BaseEntity {
     Vector3 position;                
     Texture texture;
 };
@@ -32,6 +33,7 @@ typedef struct {
     struct BaseEntity;
     float drawHeight;
     BoundingBox boundingBox;
+    uint8_t textureIndex;
 } MapBlock;
 
 typedef struct {
@@ -47,5 +49,12 @@ typedef struct {
     bool wallCollision;
     uint8_t floorHeight;
 } DebugInfo;
+
+typedef struct {
+    Vector3 position;
+    int mapArrayIndex;
+    int blockIndex;
+    bool hasSelection;
+} SelectedEntity;
 
 #endif

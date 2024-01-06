@@ -111,10 +111,10 @@ int GetMapArrayIndex(uint8_t col, uint8_t row)
     return index;
 }
 
-int GetMapIndeFromPosition(float x, float y)
+int GetMapIndeFromPosition(Vector3 location)
 {
-    int col = (int)(floor(x)) + (MAP_DIMENSION / 2);
-    int row = (int)(floor(y)) + (MAP_DIMENSION / 2);
+    int col = (int)(floor(location.x)) + (MAP_DIMENSION / 2);
+    int row = (int)(floor(location.z)) + (MAP_DIMENSION / 2);
 
     int index = (row * 64) + col;
     return index;
@@ -131,6 +131,7 @@ uint8_t GetMapArrayHeightFromIndex(uint8_t index, uint8_t baseValue)
     if (index >= 43 && index < 50) { return 5; }
     if (index >= 50 && index < 57) { return 6; }
     if (index >= 57 && index < 64) { return 7; }
+        
     return baseValue;
 }
 
