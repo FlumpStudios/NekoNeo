@@ -133,3 +133,23 @@ uint8_t GetMapArrayHeightFromIndex(uint8_t index, uint8_t baseValue)
     if (index >= 57 && index < 64) { return 7; }
     return baseValue;
 }
+
+Vector3 NormalizeVector(Vector3 v) {
+    float magnitude = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+
+    Vector3 normalized;
+    normalized.x = v.x / magnitude;
+    normalized.y = v.y / magnitude;
+    normalized.z = v.z / magnitude;
+
+    return normalized;
+}
+
+Vector3 CalculateCameraRayDirection(Camera* cam) {
+    Vector3 direction;
+    direction.x = cam->target.x - cam->position.x;
+    direction.y = cam->target.y - cam->position.y;
+    direction.z = cam->target.z - cam->position.z;
+    return direction;
+}
+

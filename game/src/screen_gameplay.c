@@ -11,6 +11,7 @@
 #include "editorUi.h"
 #include <string.h>
 
+
 static uint32_t _blockCount;
 static uint16_t _elementCounts;
 static bool _isPlayerClipping = false;
@@ -43,6 +44,41 @@ Shader alphaDiscard;
 
 Element* items;
 MapBlock* mapBlocks;
+
+Vector3 selectionLocation = { 0.0f, 0.0f, 0.0f };
+bool objectHasBeenSelected = false;
+
+
+void SetSelectionBlockLocation(void)
+{   
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    {
+        Ray ray = { 0 };
+        RayCollision collision = { 0 };
+        Vector3 pos = { camera.position.x, camera.position.y, camera.position.z };
+
+        ray.position = pos;
+        ray.direction = CalculateCameraRayDirection(&camera);
+
+        float dist = -1;
+        for (int i = 0; i < _blockCount; i++)
+        {
+            collision = GetRayCollisionBox(ray, mapBlocks[i].boundingBox);
+            if (collision.hit)
+            {
+                if (collision.distance < dist || dist < 0)
+                {   dist = collision.distance;
+                    selectionLocation = mapBlocks[i].position;
+                }
+                objectHasBeenSelected = true;
+            }
+        }
+        if(dist < 0)
+        { 
+            objectHasBeenSelected = false;
+        }
+    }
+}
 
 bool CheckLevelCollision(Vector3 entityPos, Vector3 entitySize)
 {   
@@ -381,16 +417,16 @@ void InitGameplayScreen(void)
 
 void UpdateFloorHeight()
 {
-    int arrayPos = GetMapIndeFromPosition(camera.position.x, camera.position.z);
+    int arrayPos = GetMapIndeFromPosition(selectionLocation.x, selectionLocation.z);
     auto e = level->mapArray[arrayPos];
-    uint8_t h = GetMapArrayHeightFromIndex(e, 0);
+    uint8_t h = GetMapArrayHeightFromIndex(e, level->ceilHeight);
     _floorHeight = h;
 }
 
 // Gameplay Screen Update logic
 void UpdateGameplayScreen(void)
 {
-
+    
     if (IsKeyPressed(KEY_G))
     {
         currentEditorMode = (currentEditorMode == Mode_Editor ? Mode_Game : Mode_Editor);
@@ -420,9 +456,9 @@ void UpdateGameplayScreen(void)
         }
     }
 
-
     if (currentEditorMode == Mode_Editor)
     {
+        SetSelectionBlockLocation();
         cameraMode = CAMERA_FREE;
         camera.up = (Vector3){ 0.0f, 1.0f, 0.0f }; 
     }
@@ -431,15 +467,11 @@ void UpdateGameplayScreen(void)
         cameraMode = CAMERA_FIRST_PERSON;
         camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
 
-        uint8_t i = GetMapIndeFromPosition(camera.position.x, camera.position.z);
-        uint8_t h = GetMapArrayHeightFromIndex(i, level->ceilHeight);
-
-        if (h >= level->ceilHeight)
-        {
-            h = 1;
-        }
+        int arrayPos = GetMapIndeFromPosition(camera.position.x, camera.position.z);
+        auto e = level->mapArray[arrayPos];
+        uint8_t h = GetMapArrayHeightFromIndex(e, 0);
         
-        camera.position.y = PLAYER_HEIGHT + (BLOCK_HEIGHT * (_floorHeight));
+        camera.position.y = PLAYER_HEIGHT + (BLOCK_HEIGHT * (h));
 
         if (_isPlayerClipping)
         {
@@ -476,7 +508,9 @@ void UpdateGameplayScreen(void)
     else
     {
         UpdateCamera(&camera, cameraMode);
+    
     }
+    _isPlayerClipping = CheckLevelCollision(camera.position, (Vector3) { 0.5f, 0.5f, 0.5f });
     UpdateFloorHeight();
 }
 
@@ -487,18 +521,28 @@ void DrawGameplayScreen(void)
     ClearBackground(SKYBLUE);
 
     BeginMode3D(camera);
-    _isPlayerClipping = CheckLevelCollision(camera.position, (Vector3) { 0.5f, 0.5f, 0.5f });
-    
     DrawPlane((Vector3) { 0.0f, -0.1f, 0.0f }, (Vector2) { 256.0f, 256.0f }, GRAY);
-    BeginShaderMode(alphaDiscard);
-    DrawElements();
+    DrawWalls();
+
     if (currentEditorMode == Mode_Editor)
-    {    
+    {
+        if (objectHasBeenSelected)
+        {
+            int mod = _floorHeight % 4 > 0;
+            for (size_t i = 0; i < ((_floorHeight / 4) + mod); i++)
+            {
+                Vector3 vec = { selectionLocation.x,(float)i + 0.5f, selectionLocation.z };
+                DrawCube(vec, 1.005f, 1.005f, 1.005f, TRANS_RED);
+                DrawCubeWires(vec, 1.005, 1.005f, 1.005f, BLACK);
+            }
+        }
+
         DrawGrid(MAP_DIMENSION, 1.0f);
     }
     
-    EndShaderMode(alphaDiscard);    
-    DrawWalls();  
+    BeginShaderMode(alphaDiscard);
+    DrawElements();
+    EndShaderMode(alphaDiscard);   
     EndMode3D();
 
 
@@ -508,15 +552,14 @@ void DrawGameplayScreen(void)
         float y = GetScreenHeight() - (weaponsTextures[1].height * GUN_SCALE);
         DrawTextureEx(weaponsTextures[1], (Vector2) { x, y}, 0.0f, GUN_SCALE, WHITE);
     }
-
-    // UI
-    DrawCrossHair();
-    if (drawHelpText && currentEditorMode == Mode_Editor)
+    else if (drawHelpText && currentEditorMode == Mode_Editor)
     {
-        auto arrayPos = GetMapIndeFromPosition(camera.position.x, camera.position.z);
+        auto arrayPos = GetMapIndeFromPosition(selectionLocation.x, selectionLocation.z);
         DebugInfo d = { &camera,arrayPos, _isPlayerClipping, _floorHeight };
         EUI_DrawDebugData(&d);
     }
+
+    DrawCrossHair();
 }
 
 void DrawCrossHair(void)

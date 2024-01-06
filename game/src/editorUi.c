@@ -53,7 +53,7 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
     DrawText(TextFormat("- Up: (%06.3f, %06.3f, %06.3f)", debugInfo->camera->up.x, debugInfo->camera->up.y, debugInfo->camera->up.z), 610, y, 10, TEXT_COLOUR);
     y += SPACING;
     
-    DrawText(TextFormat("- Clipping wall: %u", debugInfo->wallCollision), 610, y, 10, TEXT_COLOUR);
+    DrawText(TextFormat("- Is Camera Clipping wall: %u", debugInfo->wallCollision), 610, y, 10, TEXT_COLOUR);
     y += SPACING;
 
     DrawText(TextFormat("- Map Array Index: %i", debugInfo->arrayCell), 610, y, 10, TEXT_COLOUR);

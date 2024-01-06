@@ -1,6 +1,10 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+
+#define TRANS_RED        CLITERAL(Color){ 230, 41, 55, 100 } 
+
+#define PROJECT_NAME "NekoNeo"
 #define MAP_DIMENSION 64
 #define PLAYER_HEIGHT 0.65f
 #define DOOR_MASK 0xc0
