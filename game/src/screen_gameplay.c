@@ -19,6 +19,7 @@ static uint8_t _floorHeight;
 static bool drawHelpText = 1;
 static int framesCounter = 0;
 static int finishScreen = 0;
+static int _currentWallSelection = 8;
 static int cameraMode = CAMERA_FREE;
 static uint8_t currentLevel = DEBUG_LEVEL;
 static SFG_Level* level;
@@ -67,6 +68,7 @@ void SetSelectionBlockLocation(void)
         ray.position = pos;
         ray.direction = CalculateCameraRayDirection(&camera);
 
+        // TODO: Replace with quick sort
         float dist = -1;
         
         int nearestSelection = -1 ;
@@ -96,8 +98,12 @@ void SetSelectionBlockLocation(void)
             selectionLocation.hasBlock = hasBlock;
             if (!hasBlock)
             {
-                level->mapArray[selectionLocation.mapArrayIndex] = 8;
+                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
                 RefreshWalls();
+            }
+            else 
+            {
+                _currentWallSelection = level->mapArray[selectionLocation.mapArrayIndex];
             }
         }
 
@@ -311,6 +317,7 @@ void InitWalls(bool saveOnComplete)
         }
         else
         {
+            // TODO: Eww, need to remove duplicated stuff
             float x = (1.0f * col) - MAP_DIMENSION / 2;
             float y = 1.0f;
             float z = (1.0f * row) - MAP_DIMENSION / 2;
@@ -506,14 +513,13 @@ void UpdateGameplayScreen(void)
 
         if (selectionLocation.hasSelection)
         {
-            int i = level->mapArray[selectionLocation.mapArrayIndex];
             
-            i++;
-            if ((i-1) % 7 == 0)
+            _currentWallSelection++;
+            if ((_currentWallSelection -1) % 7 == 0)
             {
-                i -=7;
+                _currentWallSelection -=7;
             }
-            level->mapArray[selectionLocation.mapArrayIndex] = i;
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
             RefreshWalls();
         }
     }
@@ -532,14 +538,13 @@ void UpdateGameplayScreen(void)
     {   
         if (selectionLocation.hasSelection)
         {
-            int i = level->mapArray[selectionLocation.mapArrayIndex];
-            i += 7;
-            if (i >= 64)
+            _currentWallSelection += 7;
+            if (_currentWallSelection >= 64)
             {
-                i-=63;
-                i += 7;
+                _currentWallSelection -=63;
+                _currentWallSelection += 7;
             }
-            level->mapArray[selectionLocation.mapArrayIndex] = i;
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
             RefreshWalls();
         }
     }
