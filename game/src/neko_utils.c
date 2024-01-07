@@ -121,9 +121,7 @@ int GetMapIndeFromPosition(Vector3 location)
 }
 
 uint8_t GetMapArrayHeightFromIndex(uint8_t index, uint8_t baseValue)
-{       
-    if (index < 15 || index > 63) { return baseValue; }
-
+{           
     if (index >= 15 && index < 22) { return 1; }
     if (index >= 22 && index < 29) { return 2; }
     if (index >= 29 && index < 36) { return 3; }

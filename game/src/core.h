@@ -34,6 +34,7 @@ typedef struct {
     float drawHeight;
     BoundingBox boundingBox;
     uint8_t textureIndex;
+    bool hasBlock;
 } MapBlock;
 
 typedef struct {
@@ -55,6 +56,7 @@ typedef struct {
     int mapArrayIndex;
     int blockIndex;
     bool hasSelection;
+    bool hasBlock;
 } SelectedEntity;
 
 #endif

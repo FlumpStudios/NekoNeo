@@ -11,7 +11,6 @@
 #include "editorUi.h"
 #include <string.h>
 
-
 static uint32_t _blockCount;
 static uint16_t _elementCounts;
 static bool _isPlayerClipping = false;
@@ -47,8 +46,15 @@ MapBlock* mapBlocks;
 
 SelectedEntity selectionLocation = { 0 };
 
+void InitWalls(bool saveOnComplete);
 
-
+void RefreshWalls(void)
+{
+    free(mapBlocks);
+    mapBlocks = NULL;
+    _blockCount = 0;
+    InitWalls(true);
+}
 
 void SetSelectionBlockLocation(void)
 {   
@@ -62,6 +68,9 @@ void SetSelectionBlockLocation(void)
         ray.direction = CalculateCameraRayDirection(&camera);
 
         float dist = -1;
+        
+        int nearestSelection = -1 ;
+
         for (int i = 0; i < _blockCount; i++)
         {
             collision = GetRayCollisionBox(ray, mapBlocks[i].boundingBox);
@@ -69,17 +78,29 @@ void SetSelectionBlockLocation(void)
             {
                 if (collision.distance < dist || dist < 0)
                 {   dist = collision.distance;
-                    selectionLocation.position = mapBlocks[i].position;
-                    selectionLocation.hasSelection = true;
-                    selectionLocation.blockIndex = i;
-                    selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
+                    nearestSelection = i;
                 }
             }
         }
-        if(dist < 0)
+        if(nearestSelection < 0)
         { 
             selectionLocation.hasSelection = false;
         }
+        else
+        {
+            bool hasBlock = mapBlocks[nearestSelection].hasBlock;
+            selectionLocation.position = mapBlocks[nearestSelection].position;
+            selectionLocation.hasSelection = true;
+            selectionLocation.blockIndex = nearestSelection;
+            selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
+            selectionLocation.hasBlock = hasBlock;
+            if (!hasBlock)
+            {
+                level->mapArray[selectionLocation.mapArrayIndex] = 8;
+                RefreshWalls();
+            }
+        }
+
     }
 }
 
@@ -282,18 +303,45 @@ void InitWalls(bool saveOnComplete)
 
                 
                 mapBlocks[_blockCount].boundingBox = levelBox;
-
+                mapBlocks[_blockCount].hasBlock = true;
 
                 _blockCount++;
                 k += skipCount;
             }
+        }
+        else
+        {
+            float x = (1.0f * col) - MAP_DIMENSION / 2;
+            float y = 1.0f;
+            float z = (1.0f * row) - MAP_DIMENSION / 2;
+            mapBlocks[_blockCount].position = (Vector3){ x + 0.5f, BLOCK_HEIGHT / 2, z + 0.5f };
+            mapBlocks[_blockCount].hasBlock = false;
+            mapBlocks[_blockCount].drawHeight = 0.25f;
+
+            Vector3 wallPos = mapBlocks[_blockCount].position;
+            Vector3 wallSize = { 1.0f,mapBlocks[_blockCount].drawHeight,1.0f };
+
+            BoundingBox levelBox = (BoundingBox){ (Vector3) {
+                        wallPos.x - wallSize.x / 2,
+                        wallPos.y - wallSize.y / 2,
+                        wallPos.z - wallSize.z / 2
+                    },
+                    (Vector3) {
+                        wallPos.x + wallSize.x / 2,
+                        wallPos.y + wallSize.y / 2,
+                        wallPos.z + wallSize.z / 2
+                    } };
+
+            mapBlocks[_blockCount].boundingBox = levelBox;
+
+            _blockCount++;        
         }
         col++;
     }
 
     if (saveOnComplete && SaveLevel(level))
     {
-        TraceLog(LOG_ERROR, "Level saved on wall update");
+        TraceLog(LOG_INFO, "Level saved on wall update");
     }
     else
     {
@@ -353,7 +401,7 @@ void InitGameplayScreen(void)
     enderEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_10.png");
     turretEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_13.png");
     exploderEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_16.png");
-    blocker = LoadTexture("C:/Projects/NekoEngine/Items/blocker.png");
+    blocker = LoadTexture("C:/Projects/NekoEngine/assets/Blocker.png");
 
 #else
     alphaDiscard = LoadShader(NULL, "data/alphaDiscard.fs");
@@ -404,7 +452,7 @@ void InitGameplayScreen(void)
     enderEnemy = LoadTexture("Enemies/o_10.png");
     turretEnemy = LoadTexture("Enemies/o_13.png");
     exploderEnemy = LoadTexture("Enemies/o_16.png");
-    blocker = LoadTexture("Items/blocker.png");
+    blocker = LoadTexture("assets/Blocker.png");
 #endif
 
     framesCounter = 0;
@@ -429,7 +477,7 @@ void InitGameplayScreen(void)
 void UpdateFloorHeight()
 {
     auto e = level->mapArray[selectionLocation.mapArrayIndex];
-    uint8_t h = GetMapArrayHeightFromIndex(e, level->ceilHeight);
+    uint8_t h = GetMapArrayHeightFromIndex(e, e == 0 ? 1 : level->ceilHeight);
     _floorHeight = h;
 }
 
@@ -466,10 +514,17 @@ void UpdateGameplayScreen(void)
                 i -=7;
             }
             level->mapArray[selectionLocation.mapArrayIndex] = i;
-            free(mapBlocks);
-            mapBlocks = NULL;
-            _blockCount = 0;
-            InitWalls(true);
+            RefreshWalls();
+        }
+    }
+
+    if (IsKeyPressed(KEY_DELETE))
+    {
+        if (selectionLocation.hasSelection)
+        {            
+            level->mapArray[selectionLocation.mapArrayIndex] = 0;
+            RefreshWalls();
+            selectionLocation.hasSelection = false;
         }
     }
 
@@ -485,10 +540,7 @@ void UpdateGameplayScreen(void)
                 i += 7;
             }
             level->mapArray[selectionLocation.mapArrayIndex] = i;
-            free(mapBlocks);
-            mapBlocks = NULL;
-            _blockCount = 0;
-            InitWalls(true);
+            RefreshWalls();
         }
     }
 
@@ -582,9 +634,9 @@ void DrawGameplayScreen(void)
         {
             int mod = _floorHeight % 4 > 0;
             for (size_t i = 0; i < ((_floorHeight / 4) + mod); i++)
-            {
-                Vector3 vec = { selectionLocation.position.x,(float)i + 0.5f, selectionLocation.position.z };
-                DrawCube(vec, 1.005f, 1.005f, 1.005f, TRANS_RED);
+            {   
+                Vector3 vec = { selectionLocation.position.x,(float)i + 0.5f, selectionLocation.position.z };                
+                DrawCube(vec, 1.005f, 1.005f, 1.005f, selectionLocation.hasBlock ? TRANS_RED: TRANS_BLUE);
                 DrawCubeWires(vec, 1.005, 1.005f, 1.005f, BLACK);
             }
         }
@@ -632,7 +684,7 @@ void DrawWalls(void)
     {
         for (size_t i = 0; i < _blockCount; i++)
         {
-            if (mapBlocks[i].drawHeight > 0)
+            if (mapBlocks[i].hasBlock &&  mapBlocks[i].drawHeight > 0)
             {            
                 if (currentRenderMode == RenerMode_Textured)
                 {                   
