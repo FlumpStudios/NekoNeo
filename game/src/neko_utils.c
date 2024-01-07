@@ -151,4 +151,3 @@ Vector3 CalculateCameraRayDirection(Camera* cam) {
     direction.z = cam->target.z - cam->position.z;
     return direction;
 }
-

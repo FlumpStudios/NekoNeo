@@ -4,11 +4,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
-enum ElementTypes {
-    Wall,
-    ENemy,
-    Weapon,
-    Pickup,  
+enum EntityType {
+    Entity_Type_None,
+    Entity_Type_Wall,
+    Entity_Type_Item
 };
 
 enum Mode {
@@ -40,6 +39,7 @@ typedef struct {
 typedef struct {
     struct BaseEntity;
     enum ElementTypes type;
+    BoundingBox boundingBox;
     float size;
 } Element;
 
@@ -54,9 +54,8 @@ typedef struct {
 typedef struct {
     Vector3 position;
     int mapArrayIndex;
-    int blockIndex;
     bool hasSelection;
-    bool hasBlock;
+    enum EntityType entityType;
 } SelectedEntity;
 
 #endif

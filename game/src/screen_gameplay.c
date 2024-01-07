@@ -60,7 +60,7 @@ void RefreshWalls(void)
 void SetSelectionBlockLocation(void)
 {   
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-    {
+    {   
         Ray ray = { 0 };
         RayCollision collision = { 0 };
         Vector3 pos = { camera.position.x, camera.position.y, camera.position.z };
@@ -68,10 +68,39 @@ void SetSelectionBlockLocation(void)
         ray.position = pos;
         ray.direction = CalculateCameraRayDirection(&camera);
 
-        // TODO: Replace with quick sort
         float dist = -1;
         
         int nearestSelection = -1 ;
+
+        for (int i = 0; i < _elementCounts; i++)
+        {
+            collision = GetRayCollisionBox(ray, items[i].boundingBox);
+            if (collision.hit)
+            {
+                if (collision.distance < dist || dist < 0)
+                {
+                    dist = collision.distance;
+                    nearestSelection = i;
+                }
+            }
+        }
+
+        if (nearestSelection < 0)
+        {
+            selectionLocation.hasSelection = false;
+        }
+        else
+        {
+            selectionLocation.hasSelection = true;
+            selectionLocation.position = items[nearestSelection].position;
+            selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
+            selectionLocation.entityType = Entity_Type_Item;
+            return;
+        }
+
+
+        dist = -1;
+        nearestSelection = -1;
 
         for (int i = 0; i < _blockCount; i++)
         {
@@ -84,25 +113,30 @@ void SetSelectionBlockLocation(void)
                 }
             }
         }
+
+        // This means it's found nothing in the scene
         if(nearestSelection < 0)
         { 
             selectionLocation.hasSelection = false;
+            selectionLocation.entityType = Entity_Type_None;
+            selectionLocation.position = (Vector3){ 0.f,0.f,0.f };
+            selectionLocation.mapArrayIndex = 0;
         }
         else
         {
             bool hasBlock = mapBlocks[nearestSelection].hasBlock;
             selectionLocation.position = mapBlocks[nearestSelection].position;
             selectionLocation.hasSelection = true;
-            selectionLocation.blockIndex = nearestSelection;
             selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
-            selectionLocation.hasBlock = hasBlock;
             if (!hasBlock)
             {
+                selectionLocation.entityType = Entity_Type_Wall;
                 level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
                 RefreshWalls();
             }
             else 
             {
+                selectionLocation.entityType = Entity_Type_Wall;
                 _currentWallSelection = level->mapArray[selectionLocation.mapArrayIndex];
             }
         }
@@ -206,11 +240,26 @@ void InitElements(void)
             Texture t = GetTextureFromElementType(level->elements[i].type);
             float h = 0.25f * stepSize;
             float x = level->elements[i].coords[0] + 0.5;
+            
             float y = (size / 2) + h;
             float z = level->elements[i].coords[1] + 0.5;
+            Vector3 pos = (Vector3){ x - MAP_DIMENSION / 2,y ,z - MAP_DIMENSION / 2 };
             
+            Vector3 elementSize = (Vector3){ 1.0f, 1.0f, 1.0f };
 
-            items[i].position = (Vector3){x - MAP_DIMENSION / 2,y ,z - MAP_DIMENSION / 2};
+            BoundingBox elementbox = (BoundingBox){ (Vector3) {
+                        pos.x - elementSize.x / 2,
+                        pos.y - elementSize.y / 2,
+                        pos.z - elementSize.z / 2
+                    },
+                    (Vector3) {
+                        pos.x + elementSize.x / 2,
+                        pos.y + elementSize.y / 2,
+                        pos.z + elementSize.z / 2
+                    } };
+
+            items[i].position = pos;
+            items[i].boundingBox = elementbox;
             items[i].texture = t;
             items[i].size = size;
             _elementCounts++;
@@ -512,15 +561,17 @@ void UpdateGameplayScreen(void)
         // TODO: Do this properly
 
         if (selectionLocation.hasSelection)
-        {
-            
-            _currentWallSelection++;
-            if ((_currentWallSelection -1) % 7 == 0)
+        {   
+            if (selectionLocation.entityType == Entity_Type_Wall) 
             {
-                _currentWallSelection -=7;
+                _currentWallSelection++;
+                if ((_currentWallSelection -1) % 7 == 0)
+                {
+                    _currentWallSelection -=7;
+                }
+                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+                RefreshWalls();
             }
-            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-            RefreshWalls();
         }
     }
 
@@ -528,9 +579,12 @@ void UpdateGameplayScreen(void)
     {
         if (selectionLocation.hasSelection)
         {            
-            level->mapArray[selectionLocation.mapArrayIndex] = 0;
-            RefreshWalls();
-            selectionLocation.hasSelection = false;
+            if (selectionLocation.entityType == Entity_Type_Wall)
+            {
+                level->mapArray[selectionLocation.mapArrayIndex] = 0;
+                RefreshWalls();
+                selectionLocation.hasSelection = false;
+            }
         }
     }
 
@@ -538,14 +592,17 @@ void UpdateGameplayScreen(void)
     {   
         if (selectionLocation.hasSelection)
         {
-            _currentWallSelection += 7;
-            if (_currentWallSelection >= 64)
-            {
-                _currentWallSelection -=63;
+            if (selectionLocation.entityType == Entity_Type_Wall)
+            {            
                 _currentWallSelection += 7;
+                if (_currentWallSelection >= 64)
+                {
+                    _currentWallSelection -=63;
+                    _currentWallSelection += 7;
+                }
+                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+                RefreshWalls();
             }
-            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-            RefreshWalls();
         }
     }
 
@@ -641,8 +698,15 @@ void DrawGameplayScreen(void)
             for (size_t i = 0; i < ((_floorHeight / 4) + mod); i++)
             {   
                 Vector3 vec = { selectionLocation.position.x,(float)i + 0.5f, selectionLocation.position.z };                
-                DrawCube(vec, 1.005f, 1.005f, 1.005f, selectionLocation.hasBlock ? TRANS_RED: TRANS_BLUE);
-                DrawCubeWires(vec, 1.005, 1.005f, 1.005f, BLACK);
+                if (selectionLocation.entityType == Entity_Type_Wall)
+                {                
+                    DrawCube(vec, 1.005f, 1.005f, 1.005f, TRANS_RED);
+                    DrawCubeWires(vec, 1.005, 1.005f, 1.005f, BLACK);
+                }
+                else if (selectionLocation.entityType == Entity_Type_Item)
+                {
+                    DrawCubeWires(vec, 1.005, 1.005f, 1.005f, RED);
+                }                
             }
         }
 
@@ -680,6 +744,11 @@ void DrawElements(void)
     for (size_t i = 0; i < _elementCounts; i++)
     {
         DrawBillboard(camera, items[i].texture, items[i].position, items[i].size, WHITE);
+        
+        if (currentEditorMode == Mode_Editor)
+        {
+            //DrawBoundingBox(items[i].boundingBox,RED);
+        }
     }
 }
 
