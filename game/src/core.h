@@ -53,6 +53,7 @@ typedef struct {
 
 typedef struct {
     Vector3 position;
+    int itemIndex;
     int mapArrayIndex;
     bool hasSelection;
     enum EntityType entityType;

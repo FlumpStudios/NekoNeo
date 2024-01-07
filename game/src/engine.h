@@ -1,10 +1,6 @@
 #ifndef SCREENS_H
 #define SCREENS_H
 
-
-//----------------------------------------------------------------------------------
-// Global Variables Declaration (shared by several modules)
-//----------------------------------------------------------------------------------
 extern Font font;
 
 #ifdef __cplusplus
@@ -17,9 +13,7 @@ void DrawGameplayScreen(void);
 void DrawCrossHair();
 void DrawElements();
 void DrawWalls();
-void UnloadGameplayScreen(void);
-int FinishGameplayScreen(void);
-
+void UnloadEngineScreen(void);
 
 #ifdef __cplusplus
 }

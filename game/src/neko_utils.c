@@ -151,3 +151,26 @@ Vector3 CalculateCameraRayDirection(Camera* cam) {
     direction.z = cam->target.z - cam->position.z;
     return direction;
 }
+
+uint8_t GetNextElementType(uint8_t currentItem)
+{
+    if (currentItem < 0x0f)
+    {
+        return ++currentItem;
+    }
+
+    if (currentItem == 0x0f)
+    {
+        return 0x13;
+    }
+
+    if (currentItem == 0x13)
+    {
+        return 0x20;
+    }
+    if (currentItem >= 0x20 && currentItem < 0x26)
+    {
+        return ++currentItem;
+    }
+    return 0x01;
+}

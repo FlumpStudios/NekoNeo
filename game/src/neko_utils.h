@@ -10,5 +10,6 @@
 	int GetMapIndeFromPosition(Vector3 location);
 	Vector3 NormalizeVector(Vector3 v);
 	Vector3 CalculateCameraRayDirection(Camera* cam);
+	uint8_t GetNextElementType(uint8_t currentItem);
 	#endif
 

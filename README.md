@@ -1,2 +1,2 @@
-3D editor for Neo written in C and raylib
+3D editor for Neko written in C and raylib
 More soon...

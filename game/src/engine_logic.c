@@ -1,6 +1,6 @@
 #include <assert.h>
 #include "raylib.h"
-#include "screens.h"
+#include "engine.h"
 #include "level.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -48,6 +48,7 @@ MapBlock* mapBlocks;
 SelectedEntity selectionLocation = { 0 };
 
 void InitWalls(bool saveOnComplete);
+void InitElements(bool saveOnComplete);
 
 void RefreshWalls(void)
 {
@@ -57,20 +58,29 @@ void RefreshWalls(void)
     InitWalls(true);
 }
 
+void RefreshElements(void)
+{
+    free(items);
+    items = NULL;
+    InitElements(true);
+}
+
+
 void SetSelectionBlockLocation(void)
 {   
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
     {   
+        selectionLocation.itemIndex = -1;
         Ray ray = { 0 };
         RayCollision collision = { 0 };
         Vector3 pos = { camera.position.x, camera.position.y, camera.position.z };
 
         ray.position = pos;
-        ray.direction = CalculateCameraRayDirection(&camera);
-
+        ray.direction = CalculateCameraRayDirection(&camera);        
+        enum Entity_Type_Item foundEntityType = Entity_Type_None;
         float dist = -1;
         
-        int nearestSelection = -1 ;
+        int nearestSelection = -1;
 
         for (int i = 0; i < _elementCounts; i++)
         {
@@ -81,6 +91,7 @@ void SetSelectionBlockLocation(void)
                 {
                     dist = collision.distance;
                     nearestSelection = i;
+                    foundEntityType = Entity_Type_Item;
                 }
             }
         }
@@ -94,13 +105,9 @@ void SetSelectionBlockLocation(void)
             selectionLocation.hasSelection = true;
             selectionLocation.position = items[nearestSelection].position;
             selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
-            selectionLocation.entityType = Entity_Type_Item;
-            return;
+            selectionLocation.itemIndex = nearestSelection;
+            selectionLocation.entityType = Entity_Type_Item;    
         }
-
-
-        dist = -1;
-        nearestSelection = -1;
 
         for (int i = 0; i < _blockCount; i++)
         {
@@ -110,11 +117,12 @@ void SetSelectionBlockLocation(void)
                 if (collision.distance < dist || dist < 0)
                 {   dist = collision.distance;
                     nearestSelection = i;
+                    foundEntityType = Entity_Type_Wall;
                 }
             }
         }
 
-        // This means it's found nothing in the scene
+        
         if(nearestSelection < 0)
         { 
             selectionLocation.hasSelection = false;
@@ -124,6 +132,11 @@ void SetSelectionBlockLocation(void)
         }
         else
         {
+            if (foundEntityType != Entity_Type_Wall)
+            {
+                return;
+            }
+
             bool hasBlock = mapBlocks[nearestSelection].hasBlock;
             selectionLocation.position = mapBlocks[nearestSelection].position;
             selectionLocation.hasSelection = true;
@@ -208,7 +221,7 @@ Texture GetTextureFromElementType(uint8_t i)
     return itemTextures[0];
 }
 
-void InitElements(void)
+void InitElements(bool saveOnComplete)
 {
     size_t size = sizeof(Element) * (MAP_ARRAY_SIZE * MAX_CEIL_HEIGHT);
     if (!items)
@@ -264,6 +277,15 @@ void InitElements(void)
             items[i].size = size;
             _elementCounts++;
         }
+    }
+
+    if (saveOnComplete && SaveLevel(level))
+    {
+        TraceLog(LOG_INFO, "Level saved on wall update");
+    }
+    else
+    {
+        TraceLog(LOG_ERROR, "Error saving level to file");
     }
 }
 
@@ -520,7 +542,7 @@ void InitGameplayScreen(void)
     }
 
     InitWalls(false);
-    InitElements();
+    InitElements(false);
 
     camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          
@@ -602,6 +624,13 @@ void UpdateGameplayScreen(void)
                 }
                 level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
                 RefreshWalls();
+            }
+            else if (selectionLocation.entityType == Entity_Type_Item)
+            {
+                uint8_t t = level->elements[selectionLocation.itemIndex].type;
+                uint8_t nextElement = GetNextElementType(t);
+                level->elements[selectionLocation.itemIndex].type = nextElement;
+                RefreshElements();
             }
         }
     }
@@ -738,7 +767,6 @@ void DrawCrossHair(void)
     DrawText("+", (GetScreenWidth() / 2 ) -  10, GetScreenHeight() / 2, 24, WHITE);
 }
 
-
 void DrawElements(void)
 {
     for (size_t i = 0; i < _elementCounts; i++)
@@ -778,10 +806,8 @@ void DrawWalls(void)
     }
 }
 
-
-
 // Gameplay Screen Unload logic
-void UnloadGameplayScreen(void)
+void UnloadEngineScreen(void)
 {
     // TODO: Unload GAMEPLAY screen variables here!
     MemFree(level);
@@ -789,8 +815,3 @@ void UnloadGameplayScreen(void)
     _blockCount = 0;
 }
 
-// Gameplay Screen should finish?
-int FinishGameplayScreen(void)
-{
-    return finishScreen;
-}

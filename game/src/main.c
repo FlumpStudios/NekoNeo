@@ -1,6 +1,6 @@
 
 #include "raylib.h"
-#include "screens.h"   
+#include "engine.h"   
 #include "constants.h"
 
 #if defined(PLATFORM_WEB)
@@ -36,7 +36,7 @@ int main(void)
 #endif
 
     // Unload stuff here
-    UnloadGameplayScreen();
+    UnloadEngineScreen();
     UnloadFont(font);    
     CloseWindow();
     return 0;

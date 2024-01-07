@@ -31,7 +31,7 @@ static void DrawControls()
     DrawText("- Change column textyre: T", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText("- Change column height: ]", 15, y, 10, TEXT_COLOUR);
+    DrawText("- Cycle column height / Cycle items : ]", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
     DrawText("- Zoom keys: num-plus, num-minus or mouse scroll", 15, y, 10, TEXT_COLOUR);
