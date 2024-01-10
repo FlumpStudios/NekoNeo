@@ -12,7 +12,7 @@
 #include <string.h>
 
 static uint32_t _blockCount;
-static uint16_t _elementCounts;
+static uint16_t _elementCount;
 static bool _isPlayerClipping = false;
 static Vector3 _lastNonClippedPosition;
 static uint8_t _floorHeight;
@@ -62,13 +62,14 @@ void RefreshElements(void)
 {
     free(items);
     items = NULL;
+    _elementCount = 0;
     InitElements(true);
 }
 
 
 void SetSelectionBlockLocation(void)
 {   
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
     {   
         selectionLocation.itemIndex = -1;
         Ray ray = { 0 };
@@ -82,7 +83,7 @@ void SetSelectionBlockLocation(void)
         
         int nearestSelection = -1;
 
-        for (int i = 0; i < _elementCounts; i++)
+        for (int i = 0; i < _elementCount; i++)
         {
             collision = GetRayCollisionBox(ray, items[i].boundingBox);
             if (collision.hit)
@@ -143,9 +144,26 @@ void SetSelectionBlockLocation(void)
             selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
             if (!hasBlock)
             {
-                selectionLocation.entityType = Entity_Type_Wall;
-                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-                RefreshWalls();
+                if(IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+                {
+                    selectionLocation.entityType = Entity_Type_Item;
+                    uint8_t col = 0;
+                    uint8_t row = 0;
+                    GetEntityPositionFromPosition(selectionLocation.position, &col, &row);
+                    level->elements[_elementCount].coords[0] = col;
+                    level->elements[_elementCount].coords[1] = row;
+                    level->elements[_elementCount].type = 1;
+                    RefreshElements();
+                    selectionLocation.hasSelection = true;
+                    selectionLocation.itemIndex = _elementCount - 1; 
+
+                }
+                else
+                {                
+                    selectionLocation.entityType = Entity_Type_Wall;
+                    level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+                    RefreshWalls();
+                }
             }
             else 
             {
@@ -275,7 +293,11 @@ void InitElements(bool saveOnComplete)
             items[i].boundingBox = elementbox;
             items[i].texture = t;
             items[i].size = size;
-            _elementCounts++;
+            _elementCount++;
+        }
+        else
+        {
+            break;
         }
     }
 
@@ -538,7 +560,7 @@ void InitGameplayScreen(void)
 
     if (level)
     {
-        camera.position = (Vector3){ level->playerStart[0] , 1.0f, level->playerStart[1]};
+        camera.position = (Vector3){ level->playerStart[0] - (MAP_DIMENSION / 2) , 1.0f, level->playerStart[1] - (MAP_DIMENSION / 2) };
     }
 
     InitWalls(false);
@@ -605,6 +627,20 @@ void UpdateGameplayScreen(void)
             {
                 level->mapArray[selectionLocation.mapArrayIndex] = 0;
                 RefreshWalls();
+                selectionLocation.hasSelection = false;
+            }
+            else if (selectionLocation.entityType == Entity_Type_Item)
+            {
+                uint16_t i = selectionLocation.itemIndex;                
+                while (i < MAX_ELEMENTS -1 && level->elements[i].type > 0)
+                {
+                    uint16_t next = i + 1;
+                    level->elements[i].coords[0] = level->elements[next].coords[0];
+                    level->elements[i].coords[1] = level->elements[next].coords[1];
+                    level->elements[i].type = level->elements[next].type;
+                    i++;
+                };
+                RefreshElements();
                 selectionLocation.hasSelection = false;
             }
         }
@@ -769,14 +805,9 @@ void DrawCrossHair(void)
 
 void DrawElements(void)
 {
-    for (size_t i = 0; i < _elementCounts; i++)
+    for (size_t i = 0; i < _elementCount; i++)
     {
         DrawBillboard(camera, items[i].texture, items[i].position, items[i].size, WHITE);
-        
-        if (currentEditorMode == Mode_Editor)
-        {
-            //DrawBoundingBox(items[i].boundingBox,RED);
-        }
     }
 }
 

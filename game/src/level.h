@@ -152,7 +152,13 @@ uint8_t SFG_loadLevelFromFile(SFG_Level* buffer, uint8_t level)
     char levelString[512];
 
     // TODO: not hard code :)
+#ifdef DEBUG
+    
     snprintf(levelString, sizeof(levelString), "C:\\Projects\\NekoEngine\\levels\\level%02u.HAD", level);
+#else
+    snprintf(levelString, sizeof(levelString), "levels/level%02u.HAD", level);
+#endif
+    
 
     FILE* file = fopen(levelString, "rb");
     if (file == NULL) {

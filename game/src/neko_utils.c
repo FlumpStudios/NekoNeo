@@ -105,6 +105,12 @@ uint8_t GetTetureIndex(uint8_t i)
     return r;
 }
 
+void GetEntityPositionFromPosition(Vector3 location, uint8_t* col, uint8_t* row)
+{
+    *col = (int)(floor(location.x)) + (MAP_DIMENSION / 2);
+    *row = (int)(floor(location.z)) + (MAP_DIMENSION / 2);
+}
+
 int GetMapArrayIndex(uint8_t col, uint8_t row)
 {
     int index = (row * 64) + col;
