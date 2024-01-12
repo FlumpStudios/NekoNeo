@@ -1,6 +1,10 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#define OUTSIDE_CEIL_VALUE 31
+#define MAX_WALL_HEIGHT 30
+#define MIN_WALL_HEIGHT 4
+
 #define DEFAULT_FOV  60.0f
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720

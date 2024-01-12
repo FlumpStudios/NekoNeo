@@ -13,7 +13,6 @@
 #include <string.h>
 
 
-bool _isFullScreen = false;
 static bool _2D_Mode = false;
 static bool _focusedMode = false;
 static uint32_t _blockCount;
@@ -25,6 +24,7 @@ static bool drawHelpText = 1;
 static int framesCounter = 0;
 static int finishScreen = 0;
 static int _currentWallSelection = 8;
+static int _currentItemSelection = 1;
 static int cameraMode = CAMERA_FREE;
 static uint8_t currentLevel = DEBUG_LEVEL;
 static SFG_Level* level;
@@ -118,11 +118,12 @@ void SetSelectionBlockLocation(void)
         }
         else
         {
+            selectionLocation.entityType = Entity_Type_Item;    
             selectionLocation.hasSelection = true;
             selectionLocation.position = items[nearestSelection].position;
             selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
             selectionLocation.itemIndex = nearestSelection;
-            selectionLocation.entityType = Entity_Type_Item;    
+            _currentItemSelection = level->elements[nearestSelection].type;
         }
 
         for (int i = 0; i < _blockCount; i++)
@@ -167,7 +168,7 @@ void SetSelectionBlockLocation(void)
                     GetEntityPositionFromPosition(selectionLocation.position, &col, &row);
                     level->elements[_elementCount].coords[0] = col;
                     level->elements[_elementCount].coords[1] = row;
-                    level->elements[_elementCount].type = 1;
+                    level->elements[_elementCount].type = _currentItemSelection;
                     RefreshElements();
                     selectionLocation.hasSelection = true;
                     selectionLocation.itemIndex = _elementCount - 1; 
@@ -276,7 +277,7 @@ void InitElements(bool saveOnComplete)
 
             int mapArrayindex = GetMapArrayIndex(level->elements[i].coords[0], level->elements[i].coords[1]);
 
-            uint8_t stepSize = GetMapArrayHeightFromIndex(level->mapArray[mapArrayindex], level->ceilHeight);
+            uint8_t stepSize = GetMapArrayHeightFromIndex(level->mapArray[mapArrayindex], level->floorHeight);
 
             if (stepSize > MAX_STEP_HEIGHT)
             {
@@ -354,7 +355,7 @@ void InitWalls(bool saveOnComplete)
         if (level->mapArray[i] > 0)
         {
             uint8_t v = level->mapArray[i];
-            uint8_t height = GetMapArrayHeightFromIndex(level->mapArray[i], level->ceilHeight);
+            uint8_t height = GetMapArrayHeightFromIndex(level->mapArray[i], level->floorHeight);
             uint8_t textureIndexRef = GetTetureIndex(level->mapArray[i]);
             uint8_t textureIndex = level->textureIndices[textureIndexRef];
 
@@ -592,7 +593,7 @@ void InitGameplayScreen(void)
 void UpdateFloorHeight()
 {
     auto e = level->mapArray[selectionLocation.mapArrayIndex];
-    uint8_t h = GetMapArrayHeightFromIndex(e, e == 0 ? 1 : level->ceilHeight);
+    uint8_t h = GetMapArrayHeightFromIndex(e, e == 0 ? 1 : level->floorHeight);
     _floorHeight = h;
 }
 
@@ -644,8 +645,23 @@ void UpdateGameplayScreen(void)
         }
     }
 
+    if (IsKeyPressed(KEY_F2))
+    {
+        level->ceilHeight = (level->ceilHeight == OUTSIDE_CEIL_VALUE ? level->ceilHeight = level->floorHeight : OUTSIDE_CEIL_VALUE);
+        RefreshWalls();
+    }
+
     if (IsKeyPressed(KEY_F11))
     {
+        if(IsWindowFullscreen)            
+        { 
+            SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+        }
+        else
+        {
+            int display = GetCurrentMonitor();
+            SetWindowSize(GetMonitorWidth(display), GetMonitorHeight(display));
+        }
         ToggleFullscreen();
     }
 
@@ -662,7 +678,22 @@ void UpdateGameplayScreen(void)
         }
     }
 
-    if (IsKeyPressed(KEY_PERIOD))
+    if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_PERIOD))
+    {
+        level->floorHeight++;
+        if (level->floorHeight > MAX_WALL_HEIGHT)
+        {
+            level->floorHeight = MIN_WALL_HEIGHT;
+        }
+
+        if (level->ceilHeight < OUTSIDE_CEIL_VALUE)
+        {
+            level->ceilHeight = level->floorHeight;
+        }
+
+        RefreshWalls();
+    }
+    else if (IsKeyPressed(KEY_PERIOD))
     {   
         // HACK: insanely inefficient way to update the blocks, basically regenerating every block. At the moment just want something functiona.
         // TODO: Do this properly
@@ -683,11 +714,23 @@ void UpdateGameplayScreen(void)
         }
     }
 
-    if (IsKeyPressed(KEY_COMMA))
+    if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_COMMA))
     {
-        // HACK: insanely inefficient way to update the blocks, basically regenerating every block. At the moment just want something functiona.
-        // TODO: Do this properly
+        level->floorHeight--;
+        if (level->floorHeight < MIN_WALL_HEIGHT)
+        {
+            level->floorHeight = MAX_WALL_HEIGHT;
+        }
 
+        if (level->ceilHeight < OUTSIDE_CEIL_VALUE)
+        {
+            level->ceilHeight = level->floorHeight;
+        }
+
+        RefreshWalls();
+    }
+    else if (IsKeyPressed(KEY_COMMA))
+    {     
         if (selectionLocation.hasSelection)
         {
             if (selectionLocation.entityType == Entity_Type_Wall)
@@ -747,9 +790,10 @@ void UpdateGameplayScreen(void)
             }
             else if (selectionLocation.entityType == Entity_Type_Item)
             {
-                uint8_t t = level->elements[selectionLocation.itemIndex].type;
+                uint8_t t = _currentItemSelection;
                 uint8_t nextElement = GetNextElementType(t);
                 level->elements[selectionLocation.itemIndex].type = nextElement;
+                _currentItemSelection = nextElement;
                 RefreshElements();
             }
         }
@@ -770,10 +814,11 @@ void UpdateGameplayScreen(void)
                 RefreshWalls();
             }
             else if (selectionLocation.entityType == Entity_Type_Item)
-            {            
-                uint8_t t = level->elements[selectionLocation.itemIndex].type;
-                uint8_t nextElement = GetPreviousElementType(t);
-                level->elements[selectionLocation.itemIndex].type = nextElement;
+            {                
+                uint8_t t = _currentItemSelection;
+                uint8_t previousElement = GetPreviousElementType(t);
+                level->elements[selectionLocation.itemIndex].type = previousElement;
+                _currentItemSelection = previousElement;
                 RefreshElements();
             }
         }
@@ -902,7 +947,7 @@ void DrawGameplayScreen(void)
     }
     else if (drawHelpText && currentEditorMode == Mode_Editor)
     {
-        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _isPlayerClipping, _floorHeight };
+        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _isPlayerClipping, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE};
         EUI_DrawDebugData(&d);
     }
 
@@ -921,7 +966,19 @@ void DrawElements(void)
 {
     for (size_t i = 0; i < _elementCount; i++)
     {
-        DrawBillboard(camera, items[i].texture, items[i].position, items[i].size, WHITE);
+        if (currentRenderMode == RenerMode_Textured)
+        {
+            DrawBillboard(camera, items[i].texture, items[i].position, items[i].size, WHITE);
+        }
+        else if (currentRenderMode == RenerMode_Colored)
+        {
+            DrawCube(items[i].position, 1.0f, 1, 1.0f, RED);
+            DrawCubeWires(items[i].position, 1.0f, 1.0f, 1.0f, WHITE);
+        }
+        else if (currentRenderMode == RenerMode_CollisionBlock)
+        {
+            DrawBoundingBox(items[i].boundingBox, RED);
+        }
     }
 }
 

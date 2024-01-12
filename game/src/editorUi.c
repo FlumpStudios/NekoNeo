@@ -19,13 +19,19 @@ static void DrawControls()
     DrawText("- Toggle gameplay: G", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText("- Cycle wall height: ,(comma) and .(period)", 15, y, 10, TEXT_COLOUR);
+    DrawText("- Cycle wall height: comma(,) and period (.)", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText("- Cycle wall texture / Cycle items : [ and ]", 15, y, 10, TEXT_COLOUR);
+    DrawText("- Cycle level height: Shift + comma(,)/period (.)", 15, y, 10, TEXT_COLOUR);
+    y += SPACING;
+
+    DrawText("- Cycle wall texture / cycle items : [ and ]", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
     DrawText("- Toggle fullsreen : F11", 15, y, 10, TEXT_COLOUR);
+    y += SPACING;
+
+    DrawText("- Toggle level outside : F2", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
     
     DrawText("- Focus mode (lock came and reveal cursor): Middle mouse", 15, y, 10, TEXT_COLOUR);
@@ -33,12 +39,8 @@ static void DrawControls()
 
     DrawText("- Overhead Perspective: Tab", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
-
-
-
  
     DrawText("- SHow/Hide help and debug info: H", 15, y, 10, TEXT_COLOUR);
-
     DrawRectangle(5, Y_START - 10, 330, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));
     DrawRectangleLines(Y_START - 10, 5, 330, y + 10, RECTANGLE_EDGE_COLOUR);
 }
@@ -69,6 +71,11 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
     y += SPACING;
 
     DrawText(TextFormat("- FLoor height: %i", debugInfo->floorHeight), xpos, y, 10, TEXT_COLOUR);
+    y += SPACING;
+
+    const char* outsideString = debugInfo->isOutside ? "True" : "False";
+    DrawText(TextFormat("- Is levek outsude: %s", outsideString), xpos, y, 10, TEXT_COLOUR);
+    
 
     DrawRectangle(xpos -10, Y_START - 10, 195, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));
     DrawRectangleLines(xpos - 10, Y_START - 10, 195, y + 10, RECTANGLE_EDGE_COLOUR);

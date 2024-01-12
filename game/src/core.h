@@ -49,6 +49,7 @@ typedef struct {
     int arrayCell;
     bool wallCollision;
     uint8_t floorHeight;
+    bool isOutside;
 } DebugInfo;
 
 typedef struct {
