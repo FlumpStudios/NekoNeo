@@ -13,62 +13,65 @@ static void DrawControls()
 {
     uint8_t y = Y_START;
 
-    DrawText("Camera controls:", 15, y, 10, TEXT_COLOUR);
-    y += SPACING;
-    
-    DrawText("- Move keys: W, A, S, D, Space, Left-Ctrl", 15, y, 10, TEXT_COLOUR);
-    y += SPACING;
-    
-    DrawText("- Look around: arrow keys or mouse", 15, y, 10, TEXT_COLOUR);
-    y += SPACING;
-    
     DrawText("- Render mode keys: R", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
     
     DrawText("- Toggle gameplay: G", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText("- Change column textyre: T", 15, y, 10, TEXT_COLOUR);
+    DrawText("- Cycle wall height: ,(comma) and .(period)", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText("- Cycle column height / Cycle items : ]", 15, y, 10, TEXT_COLOUR);
+    DrawText("- Cycle wall texture / Cycle items : [ and ]", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText("- Zoom keys: num-plus, num-minus or mouse scroll", 15, y, 10, TEXT_COLOUR);
+    DrawText("- Toggle fullsreen : F11", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
     
+    DrawText("- Focus mode (lock came and reveal cursor): Middle mouse", 15, y, 10, TEXT_COLOUR);
+    y += SPACING;
+
+    DrawText("- Overhead Perspective: Tab", 15, y, 10, TEXT_COLOUR);
+    y += SPACING;
+
+
+
+ 
     DrawText("- SHow/Hide help and debug info: H", 15, y, 10, TEXT_COLOUR);
 
     DrawRectangle(5, Y_START - 10, 330, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));
     DrawRectangleLines(Y_START - 10, 5, 330, y + 10, RECTANGLE_EDGE_COLOUR);
 }
 
+
 static void DrawCameraInfo(DebugInfo* debugInfo)
 {
+    int xpos = GetScreenWidth() - 200;
+
     uint8_t y = Y_START;
 
-    DrawText("Camera status:", 610, y, 10, TEXT_COLOUR);
+    DrawText("Camera status:", xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
     
-    DrawText(TextFormat("- Position: (%06.3f, %06.3f, %06.3f)", debugInfo->camera->position.x, debugInfo->camera->position.y, debugInfo->camera->position.z), 610, y, 10, TEXT_COLOUR);
+    DrawText(TextFormat("- Position: (%06.3f, %06.3f, %06.3f)", debugInfo->camera->position.x, debugInfo->camera->position.y, debugInfo->camera->position.z), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
     
-    DrawText(TextFormat("- Target: (%06.3f, %06.3f, %06.3f)", debugInfo->camera->target.x, debugInfo->camera->target.y, debugInfo->camera->target.z), 610, y, 10, TEXT_COLOUR);
+    DrawText(TextFormat("- Target: (%06.3f, %06.3f, %06.3f)", debugInfo->camera->target.x, debugInfo->camera->target.y, debugInfo->camera->target.z), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText(TextFormat("- Up: (%06.3f, %06.3f, %06.3f)", debugInfo->camera->up.x, debugInfo->camera->up.y, debugInfo->camera->up.z), 610, y, 10, TEXT_COLOUR);
+    DrawText(TextFormat("- Up: (%06.3f, %06.3f, %06.3f)", debugInfo->camera->up.x, debugInfo->camera->up.y, debugInfo->camera->up.z), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
     
-    DrawText(TextFormat("- Is Camera Clipping wall: %u", debugInfo->wallCollision), 610, y, 10, TEXT_COLOUR);
+    DrawText(TextFormat("- Is Camera Clipping wall: %u", debugInfo->wallCollision), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText(TextFormat("- Map Array Index: %i", debugInfo->arrayCell), 610, y, 10, TEXT_COLOUR);
+    DrawText(TextFormat("- Map Array Index: %i", debugInfo->arrayCell), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText(TextFormat("- FLoor height: %i", debugInfo->floorHeight), 610, y, 10, TEXT_COLOUR);
+    DrawText(TextFormat("- FLoor height: %i", debugInfo->floorHeight), xpos, y, 10, TEXT_COLOUR);
 
-    DrawRectangle(600, Y_START - 10, 195, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));
-    DrawRectangleLines(600, Y_START - 10, 195, y + 10, RECTANGLE_EDGE_COLOUR);
+    DrawRectangle(xpos -10, Y_START - 10, 195, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));
+    DrawRectangleLines(xpos - 10, Y_START - 10, 195, y + 10, RECTANGLE_EDGE_COLOUR);
 }
 
 

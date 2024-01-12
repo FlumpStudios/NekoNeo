@@ -8,9 +8,14 @@
 #include "core.h"
 #include "neko_utils.h"
 #include "constants.h"
+#include "rcamera.h"
 #include "editorUi.h"
 #include <string.h>
 
+
+bool _isFullScreen = false;
+static bool _2D_Mode = false;
+static bool _focusedMode = false;
 static uint32_t _blockCount;
 static uint16_t _elementCount;
 static bool _isPlayerClipping = false;
@@ -69,15 +74,25 @@ void RefreshElements(void)
 
 void SetSelectionBlockLocation(void)
 {   
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
     {   
         selectionLocation.itemIndex = -1;
         Ray ray = { 0 };
         RayCollision collision = { 0 };
-        Vector3 pos = { camera.position.x, camera.position.y, camera.position.z };
+        
+        
+        if (_focusedMode)
+        {
+            ray = GetMouseRay(GetMousePosition(), camera);
+        }
+        else
+        {        
+            Vector3 pos = { camera.position.x, camera.position.y, camera.position.z };
+            ray.position = pos;
+            ray.direction = CalculateCameraRayDirection(&camera);        
+        }
 
-        ray.position = pos;
-        ray.direction = CalculateCameraRayDirection(&camera);        
+
         enum Entity_Type_Item foundEntityType = Entity_Type_None;
         float dist = -1;
         
@@ -568,7 +583,7 @@ void InitGameplayScreen(void)
 
     camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          
-    camera.fovy = 60.0f;                                
+    camera.fovy = DEFAULT_FOV;
     camera.projection = CAMERA_PERSPECTIVE;
     currentEditorMode = Mode_Editor;
     DisableCursor();
@@ -585,6 +600,55 @@ void UpdateFloorHeight()
 void UpdateGameplayScreen(void)
 {
     
+    if (IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE) && currentEditorMode == Mode_Editor)
+    {        
+        _focusedMode = !_focusedMode;
+        _focusedMode ? EnableCursor() : DisableCursor();
+    }
+
+
+    if (IsKeyPressed(KEY_TAB))
+    {
+        static bool was_orignally_focusedmode;        
+        static Vector3 orignal_cam_pos;
+        static Vector3 orignal_cam_target;
+        static bool was_cursor_hidden;
+  
+
+        _2D_Mode = !_2D_Mode;
+        if (_2D_Mode)
+        {
+            was_orignally_focusedmode = _focusedMode;
+            orignal_cam_pos = camera.position;
+            orignal_cam_target = camera.target;
+            was_cursor_hidden = IsCursorHidden();
+            
+            ShowCursor();
+            camera.position = (Vector3){ 0.0f, 2.0f, -100.0f };
+            camera.target = (Vector3){ 0.0f, 2.0f, 0.0f };
+            camera.projection = CAMERA_ORTHOGRAPHIC;
+            CameraPitch(&camera, -90 * DEG2RAD, true, true, false);
+            CameraYaw(&camera, 180 * DEG2RAD, false);
+            CameraRoll(&camera, 0);
+            _focusedMode = true;
+            camera.fovy = 65.f;
+        }
+        else
+        {
+            _focusedMode = was_orignally_focusedmode;
+            camera.position = orignal_cam_pos;
+            camera.target = orignal_cam_target;
+            camera.projection = CAMERA_PERSPECTIVE;            
+            camera.fovy = 65.f;
+            was_cursor_hidden ? HideCursor() : ShowCursor();
+        }
+    }
+
+    if (IsKeyPressed(KEY_F11))
+    {
+        ToggleFullscreen();
+    }
+
     if (IsKeyPressed(KEY_G))
     {
         currentEditorMode = (currentEditorMode == Mode_Editor ? Mode_Game : Mode_Editor);
@@ -598,9 +662,8 @@ void UpdateGameplayScreen(void)
         }
     }
 
-    if (IsKeyPressed(KEY_T))
-    {
-        
+    if (IsKeyPressed(KEY_PERIOD))
+    {   
         // HACK: insanely inefficient way to update the blocks, basically regenerating every block. At the moment just want something functiona.
         // TODO: Do this properly
 
@@ -608,10 +671,32 @@ void UpdateGameplayScreen(void)
         {   
             if (selectionLocation.entityType == Entity_Type_Wall) 
             {
-                _currentWallSelection++;
-                if ((_currentWallSelection -1) % 7 == 0)
+                _currentWallSelection += 7;
+                if (_currentWallSelection >= 64)
                 {
-                    _currentWallSelection -=7;
+                    _currentWallSelection -= 63;
+                    _currentWallSelection += 7;
+                }
+                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+                RefreshWalls();
+            }
+        }
+    }
+
+    if (IsKeyPressed(KEY_COMMA))
+    {
+        // HACK: insanely inefficient way to update the blocks, basically regenerating every block. At the moment just want something functiona.
+        // TODO: Do this properly
+
+        if (selectionLocation.hasSelection)
+        {
+            if (selectionLocation.entityType == Entity_Type_Wall)
+            {
+                _currentWallSelection -= 7;
+                if (_currentWallSelection <= 7)
+                {
+                    _currentWallSelection += 63;
+                    _currentWallSelection -= 7;
                 }
                 level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
                 RefreshWalls();
@@ -652,11 +737,10 @@ void UpdateGameplayScreen(void)
         {
             if (selectionLocation.entityType == Entity_Type_Wall)
             {            
-                _currentWallSelection += 7;
-                if (_currentWallSelection >= 64)
+                _currentWallSelection++;
+                if ((_currentWallSelection - 1) % 7 == 0)
                 {
-                    _currentWallSelection -=63;
-                    _currentWallSelection += 7;
+                    _currentWallSelection -= 7;
                 }
                 level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
                 RefreshWalls();
@@ -665,6 +749,30 @@ void UpdateGameplayScreen(void)
             {
                 uint8_t t = level->elements[selectionLocation.itemIndex].type;
                 uint8_t nextElement = GetNextElementType(t);
+                level->elements[selectionLocation.itemIndex].type = nextElement;
+                RefreshElements();
+            }
+        }
+    }
+
+    if (IsKeyPressed(KEY_LEFT_BRACKET))
+    {
+        if (selectionLocation.hasSelection)
+        {
+            if (selectionLocation.entityType == Entity_Type_Wall)
+            {
+                _currentWallSelection--;
+                if ((_currentWallSelection) % 7 == 0)
+                {
+                    _currentWallSelection += 7;
+                }
+                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+                RefreshWalls();
+            }
+            else if (selectionLocation.entityType == Entity_Type_Item)
+            {            
+                uint8_t t = level->elements[selectionLocation.itemIndex].type;
+                uint8_t nextElement = GetPreviousElementType(t);
                 level->elements[selectionLocation.itemIndex].type = nextElement;
                 RefreshElements();
             }
@@ -738,7 +846,10 @@ void UpdateGameplayScreen(void)
     }
     else
     {
-        UpdateCamera(&camera, cameraMode);
+        if (!_focusedMode)
+        {        
+            UpdateCamera(&camera, cameraMode);
+        }
     
     }
     _isPlayerClipping = CheckLevelCollision(camera.position, (Vector3) { 0.5f, 0.5f, 0.5f });
@@ -795,7 +906,10 @@ void DrawGameplayScreen(void)
         EUI_DrawDebugData(&d);
     }
 
-    DrawCrossHair();
+    if (!_focusedMode)
+    {    
+        DrawCrossHair();
+    }
 }
 
 void DrawCrossHair(void)

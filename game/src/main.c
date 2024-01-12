@@ -9,8 +9,7 @@
 
 Font font = { 0 };
 
-static const int screenWidth = 800;
-static const int screenHeight = 450;
+
 static void UpdateDrawFrame(void);         
 
 
@@ -19,7 +18,7 @@ static void UpdateDrawFrame(void);
 //----------------------------------------------------------------------------------
 int main(void)
 {
-    InitWindow(screenWidth, screenHeight, PROJECT_NAME);
+    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, PROJECT_NAME);
     font = LoadFont("resources/mecha.png");    
     InitGameplayScreen();
   

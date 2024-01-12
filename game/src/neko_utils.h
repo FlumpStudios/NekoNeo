@@ -12,5 +12,6 @@
 	Vector3 NormalizeVector(Vector3 v);
 	Vector3 CalculateCameraRayDirection(Camera* cam);
 	uint8_t GetNextElementType(uint8_t currentItem);
+	uint8_t GetPreviousElementType(uint8_t currentItem);
 	#endif
 

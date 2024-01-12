@@ -1,7 +1,9 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-
+#define DEFAULT_FOV  60.0f
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 720
 #define TRANS_RED        CLITERAL(Color){ 230, 41, 55, 100 } 
 #define TRANS_BLUE       CLITERAL(Color){ 135, 206, 235, 100 }
 #define TEXTURE_INDICES_COUNT 7
