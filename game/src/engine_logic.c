@@ -45,6 +45,7 @@ Texture2D enderEnemy;
 Texture2D turretEnemy;
 Texture2D exploderEnemy;
 Texture2D blocker;
+Texture2D playerMarker;
 Shader alphaDiscard;
 
 Element* items;
@@ -52,8 +53,10 @@ MapBlock* mapBlocks;
 
 SelectedEntity selectionLocation = { 0 };
 
+// Forward declarations
 void InitWalls(bool saveOnComplete);
 void InitElements(bool saveOnComplete);
+void DrawPlayerStartPosition(void);
 
 void RefreshWalls(void)
 {
@@ -518,6 +521,7 @@ void InitGameplayScreen(void)
     turretEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_13.png");
     exploderEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_16.png");
     blocker = LoadTexture("C:/Projects/NekoEngine/assets/Blocker.png");
+    playerMarker = LoadTexture("C:/Projects/NekoEngine/assets/PlayerMarker.png");
 
 #else
     alphaDiscard = LoadShader(NULL, "data/alphaDiscard.fs");
@@ -569,6 +573,7 @@ void InitGameplayScreen(void)
     turretEnemy = LoadTexture("Enemies/o_13.png");
     exploderEnemy = LoadTexture("Enemies/o_16.png");
     blocker = LoadTexture("assets/Blocker.png");
+    playerMarker = LoadTexture("assets/PlayerMarker.png");
 #endif
 
     framesCounter = 0;
@@ -935,7 +940,11 @@ void DrawGameplayScreen(void)
     }
     
     BeginShaderMode(alphaDiscard);
-    DrawElements();
+    if (currentEditorMode == Mode_Editor)
+    {
+        DrawPlayerStartPosition();
+    }
+    DrawElements();    
     EndShaderMode(alphaDiscard);   
     EndMode3D();
 
@@ -948,7 +957,7 @@ void DrawGameplayScreen(void)
     else if (drawHelpText && currentEditorMode == Mode_Editor)
     {
         DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _isPlayerClipping, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE};
-        EUI_DrawDebugData(&d);
+        EUI_DrawDebugData(&d);        
     }
 
     if (!_focusedMode)
@@ -961,6 +970,30 @@ void DrawCrossHair(void)
 {
     DrawText("+", (GetScreenWidth() / 2 ) -  10, GetScreenHeight() / 2, 24, WHITE);
 }
+
+void DrawPlayerStartPosition(void)
+{
+    float size = 1.f;
+
+    int mapArrayindex = GetMapArrayIndex(level->playerStart[0], level->playerStart[1]);
+
+    uint8_t stepSize = GetMapArrayHeightFromIndex(level->mapArray[mapArrayindex], level->floorHeight);
+
+    if (stepSize > MAX_STEP_HEIGHT)
+    {
+        stepSize = 0;
+    }
+
+    float h = 0.25f * stepSize;
+    
+    float x = level->playerStart[0] + 0.5;
+    float y = (size / 2) + h;
+    float z = level->playerStart[1] + 0.5;
+    Vector3 pos = (Vector3){ x - MAP_DIMENSION / 2,y ,z - MAP_DIMENSION / 2 };
+
+    DrawBillboard(camera, playerMarker, pos, 1.0f, WHITE);
+}
+
 
 void DrawElements(void)
 {
