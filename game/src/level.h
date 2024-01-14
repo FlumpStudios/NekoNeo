@@ -3,9 +3,11 @@
 #define _SFG_LEVELS_H
 #define SFG_MAP_SIZE 64
 #define SFG_TILE_DICTIONARY_SIZE 64
-#include <stdint.h>
-#include <stdio.h>
 #include "constants.h"
+#include "neko_utils.h"
+#include <stdint.h>
+#include <string.h>
+#include <stdio.h>
 
 
 /**
@@ -142,16 +144,44 @@ typedef struct
 
 #define SFG_NUMBER_OF_LEVELS 10
 
+
+
+static void InvertElements(SFG_LevelElement* inputArray, size_t arrayLength)
+{
+    for (size_t i = 0; i < arrayLength; i++)
+    {
+        inputArray[i].coords[0] = MAP_DIMENSION - 1 - inputArray[i].coords[0];
+    }
+}
+
+void InvertArrayWidth(uint8_t* inputArray, size_t arrayLength)
+{
+    uint8_t* tempArray = (uint8_t*)MemAlloc(arrayLength);
+
+    for (size_t i = 0; i < arrayLength; i++) {
+        size_t x = i % MAP_DIMENSION;
+        size_t y = i / MAP_DIMENSION;
+
+        size_t adjustedX = MAP_DIMENSION - 1 - x;
+
+        size_t newIndex = adjustedX + y * MAP_DIMENSION;
+
+
+        tempArray[newIndex] = inputArray[i];
+    }
+
+    memcpy(inputArray, tempArray, arrayLength);
+
+    MemFree(tempArray);
+}
 uint8_t SFG_loadLevelFromFile(SFG_Level* buffer, uint8_t level)
 {
     if (buffer == NULL) {
-        // Handle the case where pointers are NULL
         return 0;
     }
 
     char levelString[512];
 
-    // TODO: not hard code :)
 #ifdef DEBUG
     
     snprintf(levelString, sizeof(levelString), "C:\\Projects\\NekoEngine\\levels\\level%02u.HAD", level);
@@ -159,7 +189,6 @@ uint8_t SFG_loadLevelFromFile(SFG_Level* buffer, uint8_t level)
     snprintf(levelString, sizeof(levelString), "levels/level%02u.HAD", level);
 #endif
     
-
     FILE* file = fopen(levelString, "rb");
     if (file == NULL) {
          perror("Error opening file");
@@ -173,6 +202,10 @@ uint8_t SFG_loadLevelFromFile(SFG_Level* buffer, uint8_t level)
     }
 
     fclose(file);
+
+    InvertElements(&buffer->elements, MAX_ELEMENTS);
+    InvertArrayWidth(&buffer->mapArray, MAP_DIMENSION * MAP_DIMENSION);
+    buffer->playerStart[0] = MAP_DIMENSION - 1 - buffer->playerStart[0];
     return 1;
 }
 
@@ -184,19 +217,33 @@ bool SaveLevel(SFG_Level *level)
 #else
     const char* saveLocation = "levels/level99.HAD";
 #endif
+
+    SFG_Level* tempLevel;
+    tempLevel = MemAlloc(sizeof(SFG_Level));
+    
+    if (!tempLevel)
+    {
+        return false;
+    }
+
+    memcpy(tempLevel, level, sizeof(SFG_Level));
+    
+    InvertArrayWidth(&tempLevel->mapArray, MAP_DIMENSION * MAP_DIMENSION);
+    InvertElements(&tempLevel->elements, MAX_ELEMENTS);
+    tempLevel->playerStart[0] = MAP_DIMENSION - 1 - tempLevel->playerStart[0];
+    
     FILE* file = fopen(saveLocation, "wb");
 
     if (file != NULL) {
-        fwrite(level, sizeof(SFG_Level), 1, file);
-        fclose(file);
+        fwrite(tempLevel, sizeof(SFG_Level), 1, file);
+        fclose(file);        
+        MemFree(tempLevel);
         return true;
     }
     else {
+        MemFree(tempLevel);
         return false;
     }
 }
-
-
-
 #endif // guard
 
