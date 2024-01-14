@@ -157,6 +157,10 @@ static void InvertElements(SFG_LevelElement* inputArray, size_t arrayLength)
 void InvertArrayWidth(uint8_t* inputArray, size_t arrayLength)
 {
     uint8_t* tempArray = (uint8_t*)MemAlloc(arrayLength);
+    if (!tempArray)
+    {
+        return;
+    }
 
     for (size_t i = 0; i < arrayLength; i++) {
         size_t x = i % MAP_DIMENSION;

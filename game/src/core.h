@@ -34,6 +34,7 @@ typedef struct {
     BoundingBox boundingBox;
     uint8_t textureIndex;
     bool hasBlock;
+    bool isDoor;
 } MapBlock;
 
 typedef struct {

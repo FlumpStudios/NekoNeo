@@ -190,7 +190,10 @@ void SetSelectionBlockLocation(void)
                 _currentWallSelection = level->mapArray[selectionLocation.mapArrayIndex];
             }
         }
-
+        if (_currentWallSelection > DOOR_MASK)
+        {
+            _currentWallSelection -= DOOR_MASK;
+        }
     }
 }
 
@@ -383,6 +386,7 @@ void InitWalls(bool saveOnComplete)
 
                 bool isDoor = v >= DOOR_MASK;
 
+                mapBlocks[_blockCount].isDoor = isDoor;
                 if (isDoor)
                 {
                     if (k < 4)
@@ -610,6 +614,28 @@ void UpdateGameplayScreen(void)
     {        
         _focusedMode = !_focusedMode;
         _focusedMode ? EnableCursor() : DisableCursor();
+    }
+
+    if (IsKeyPressed(KEY_P))
+    {
+        if (selectionLocation.hasSelection)
+        {
+            if (selectionLocation.entityType == Entity_Type_Wall)
+            {
+                if (level->mapArray[selectionLocation.mapArrayIndex] < DOOR_MASK)
+                {
+                    if (level->mapArray[selectionLocation.mapArrayIndex] <= 14)
+                    {
+                        level->mapArray[selectionLocation.mapArrayIndex] = (level->mapArray[selectionLocation.mapArrayIndex] - 7) | DOOR_MASK;
+                    }
+                }
+                else
+                {
+                    level->mapArray[selectionLocation.mapArrayIndex] = (level->mapArray[selectionLocation.mapArrayIndex] + 7) & (~DOOR_MASK);
+                }
+                RefreshWalls();
+            }
+        }
     }
 
 
@@ -991,7 +1017,19 @@ void DrawPlayerStartPosition(void)
     float z = level->playerStart[1] + 0.5;
     Vector3 pos = (Vector3){ x - MAP_DIMENSION / 2,y ,z - MAP_DIMENSION / 2 };
 
-    DrawBillboard(camera, playerMarker, pos, 1.0f, WHITE);
+    if (currentRenderMode == RenerMode_Textured)
+    {
+        DrawBillboard(camera, playerMarker, pos, 1.0f, WHITE);
+    }
+    else if (currentRenderMode == RenerMode_Colored)
+    {
+        DrawCube(pos, 1.0f, 1, 1.0f, YELLOW);
+        DrawCubeWires(pos, 1.0f, 1.0f, 1.0f, WHITE);
+    }
+    else if (currentRenderMode == RenerMode_CollisionBlock)
+    {
+        DrawCubeWires(pos, 1.0f, 1.0f, 1.0f, YELLOW);
+    }
 }
 
 
@@ -1029,12 +1067,19 @@ void DrawWalls(void)
                 }
                 else if (currentRenderMode == RenerMode_Colored)
                 {
-                    DrawCube(mapBlocks[i].position, 1.0f,mapBlocks[i].drawHeight, 1.0f, BLUE);
+                    if (mapBlocks[i].isDoor)
+                    {
+                        DrawCube(mapBlocks[i].position, 1.0f, mapBlocks[i].drawHeight, 1.0f, GREEN);
+                    }
+                    else
+                    {
+                        DrawCube(mapBlocks[i].position, 1.0f,mapBlocks[i].drawHeight, 1.0f, BLUE);
+                    }
                     DrawCubeWires(mapBlocks[i].position, 1.0f, mapBlocks[i].drawHeight, 1.0f, WHITE);
                 }
                 else if (currentRenderMode == RenerMode_CollisionBlock)
-                {   
-                    DrawBoundingBox(mapBlocks[i].boundingBox, GREEN);
+                {   if(mapBlocks[i].textureIndex)
+                    DrawBoundingBox(mapBlocks[i].boundingBox, BLUE);
                 }
             }
         }
