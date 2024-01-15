@@ -8,7 +8,6 @@
 #include "editorUi.h"
 #include <stdint.h>
 
-
 static void DrawControls()
 {
     uint8_t y = Y_START;
@@ -77,7 +76,7 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
     y += SPACING;
 
     const char* outsideString = debugInfo->isOutside ? "True" : "False";
-    DrawText(TextFormat("- Is levek outsude: %s", outsideString), xpos, y, 10, TEXT_COLOUR);
+    DrawText(TextFormat("- Is level outsude: %s", outsideString), xpos, y, 10, TEXT_COLOUR);
     
 
     DrawRectangle(xpos -10, Y_START - 10, 195, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));

@@ -1,4 +1,4 @@
-
+#define RLIGHTS_IMPLEMENTATION
 #include "raylib.h"
 #include "engine.h"   
 #include "constants.h"
