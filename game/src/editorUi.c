@@ -36,13 +36,13 @@ static void DrawControls()
     DrawText("- Toggle level outside : F2", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
     
-    DrawText("- Focus mode (lock came and reveal cursor): Middle mouse", 15, y, 10, TEXT_COLOUR);
+    DrawText("- Focus mode (lock cam and reveal cursor): Middle mouse", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
     DrawText("- Overhead Perspective: Tab", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
  
-    DrawText("- SHow/Hide help and debug info: H", 15, y, 10, TEXT_COLOUR);
+    DrawText("- Show/Hide help and debug info: H", 15, y, 10, TEXT_COLOUR);
     DrawRectangle(5, Y_START - 10, 330, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));
     DrawRectangleLines(Y_START - 10, 5, 330, y + 10, RECTANGLE_EDGE_COLOUR);
 }
