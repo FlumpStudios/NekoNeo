@@ -58,16 +58,13 @@ void InitWalls(bool saveOnComplete);
 void InitElements(bool saveOnComplete);
 void DrawPlayerStartPosition(void);
 
-void RefreshWalls(void)
+void RefreshMap(void)
 {
     free(mapBlocks);
     mapBlocks = NULL;
     _blockCount = 0;
     InitWalls(true);
-}
 
-void RefreshElements(void)
-{
     free(items);
     items = NULL;
     _elementCount = 0;
@@ -75,13 +72,12 @@ void RefreshElements(void)
 }
 
 
+
 void SetSelectionBlockLocation(void)
-{   
-   
+{
         selectionLocation.itemIndex = -1;
         Ray ray = { 0 };
         RayCollision collision = { 0 };
-        
         
         if (_focusedMode)
         {
@@ -94,12 +90,12 @@ void SetSelectionBlockLocation(void)
             ray.direction = CalculateCameraRayDirection(&camera);        
         }
 
-
         enum Entity_Type_Item foundEntityType = Entity_Type_None;
         float dist = -1;
-        
+
         int nearestSelection = -1;
 
+        // CHECK FOR ITEMS
         for (int i = 0; i < _elementCount; i++)
         {
             collision = GetRayCollisionBox(ray, items[i].boundingBox);
@@ -114,20 +110,7 @@ void SetSelectionBlockLocation(void)
             }
         }
 
-        if (nearestSelection < 0)
-        {
-            selectionLocation.hasSelection = false;
-        }
-        else
-        {
-            selectionLocation.entityType = Entity_Type_Item;    
-            selectionLocation.hasSelection = true;
-            selectionLocation.position = items[nearestSelection].position;
-            selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
-            selectionLocation.itemIndex = nearestSelection;
-            _currentItemSelection = level->elements[nearestSelection].type;
-        }
-
+        // Check for walls
         for (int i = 0; i < _blockCount; i++)
         {
             collision = GetRayCollisionBox(ray, mapBlocks[i].boundingBox);
@@ -136,63 +119,57 @@ void SetSelectionBlockLocation(void)
                 if (collision.distance < dist || dist < 0)
                 {   dist = collision.distance;
                     nearestSelection = i;
-                    foundEntityType = Entity_Type_Wall;
+                    bool hasBlock = mapBlocks[i].hasBlock;
+                    foundEntityType = hasBlock ? Entity_Type_Wall : Entity_Type_Free;
                 }
             }
         }
 
-        
-        if(nearestSelection < 0)
-        { 
-            selectionLocation.hasSelection = false;
-            selectionLocation.entityType = Entity_Type_None;
-            selectionLocation.position = (Vector3){ 0.f,0.f,0.f };
-            selectionLocation.mapArrayIndex = 0;
-        }
-        else
+        // Return if nothing hit
+        if (foundEntityType == Entity_Type_None)
         {
-            if (foundEntityType != Entity_Type_Wall)
-            {
-                return;
-            }
-
-            bool hasBlock = mapBlocks[nearestSelection].hasBlock;
+            // DO NOTHING AT TH MOMENT
+        }
+        else if (foundEntityType == Entity_Type_Wall || foundEntityType == Entity_Type_Free)
+        {
+            selectionLocation.entityType = foundEntityType;
+            selectionLocation.itemIndex = -1;
             selectionLocation.position = mapBlocks[nearestSelection].position;
-            selectionLocation.hasSelection = true;
             selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
-            if (!hasBlock)
+            if (foundEntityType == Entity_Type_Wall)
             {
-                if(IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
-                {
-                    selectionLocation.entityType = Entity_Type_Item;
-                    uint8_t col = 0;
-                    uint8_t row = 0;
-                    GetEntityPositionFromPosition(selectionLocation.position, &col, &row);
-                    level->elements[_elementCount].coords[0] = col;
-                    level->elements[_elementCount].coords[1] = row;
-                    level->elements[_elementCount].type = _currentItemSelection;
-                    RefreshElements();
-                    selectionLocation.hasSelection = true;
-                    selectionLocation.itemIndex = _elementCount - 1; 
-
-                }
-                else if(IsMouseButtonDown(MOUSE_BUTTON_LEFT))
-                {                
-                    selectionLocation.entityType = Entity_Type_Wall;
-                    level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-                    RefreshWalls();
-                }
-                else
-                {                
-                    selectionLocation.entityType = Entity_Type_None;
-                }
-            }
-            else 
-            {              
-                selectionLocation.entityType = Entity_Type_Wall;
-                _currentWallSelection = level->mapArray[selectionLocation.mapArrayIndex];                
+                _currentWallSelection = level->mapArray[selectionLocation.mapArrayIndex];
             }
         }
+        else if (foundEntityType == Entity_Type_Item)
+        {
+            selectionLocation.entityType = Entity_Type_Item;
+            selectionLocation.itemIndex = nearestSelection;
+            selectionLocation.position = items[nearestSelection].position;
+            selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
+            _currentItemSelection = level->elements[nearestSelection].type;
+        }
+        
+        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && foundEntityType != Entity_Type_Item)
+        {
+            uint8_t col = 0;
+            uint8_t row = 0;
+
+            GetEntityPositionFromPosition(selectionLocation.position, &col, &row);
+            level->elements[_elementCount].coords[0] = col;
+            level->elements[_elementCount].coords[1] = row;
+            level->elements[_elementCount].type = _currentItemSelection;
+            RefreshMap();
+            selectionLocation.itemIndex = _elementCount - 1;
+        }
+
+        if (foundEntityType != Entity_Type_Wall && IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+        {
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+            RefreshMap();
+        }
+        
+
         if (_currentWallSelection > DOOR_MASK)
         {
             _currentWallSelection -= DOOR_MASK;
@@ -288,10 +265,7 @@ void InitElements(bool saveOnComplete)
 
             uint8_t stepSize = GetMapArrayHeightFromIndex(level->mapArray[mapArrayindex], level->floorHeight);
 
-            if (stepSize > MAX_STEP_HEIGHT)
-            {
-                stepSize = 0;
-            }
+            
 
             Texture t = GetTextureFromElementType(level->elements[i].type);
             float h = 0.25f * stepSize;
@@ -628,48 +602,43 @@ void UpdateGameplayScreen(void)
 
     if (IsKeyPressed(KEY_T))
     {
-        if (selectionLocation.hasSelection)
+        if (selectionLocation.entityType == Entity_Type_Wall)
         {
-            if (selectionLocation.entityType == Entity_Type_Wall)
+            if (level->mapArray[selectionLocation.mapArrayIndex] < DOOR_MASK)
             {
-                if (level->mapArray[selectionLocation.mapArrayIndex] < DOOR_MASK)
+                if (level->mapArray[selectionLocation.mapArrayIndex] <= 14)
                 {
-                    if (level->mapArray[selectionLocation.mapArrayIndex] <= 14)
-                    {
-                        level->mapArray[selectionLocation.mapArrayIndex] = (level->mapArray[selectionLocation.mapArrayIndex] - 7) | DOOR_MASK;
-                    }
+                    level->mapArray[selectionLocation.mapArrayIndex] = (level->mapArray[selectionLocation.mapArrayIndex] - 7) | DOOR_MASK;
                 }
-                else
-                {
-                    level->mapArray[selectionLocation.mapArrayIndex] = (level->mapArray[selectionLocation.mapArrayIndex] + 7) & (~DOOR_MASK);
-                }
-                RefreshWalls();
             }
+            else
+            {
+                level->mapArray[selectionLocation.mapArrayIndex] = (level->mapArray[selectionLocation.mapArrayIndex] + 7) & (~DOOR_MASK);
+            }
+            RefreshMap();
         }
     }
 
     if (IsKeyPressed(KEY_P))
     {
-        if (selectionLocation.hasSelection)
+  
+        if (selectionLocation.entityType != Entity_Type_Item)
         {
-            if (selectionLocation.entityType != Entity_Type_Item)
+            uint8_t col = 0;
+            uint8_t row = 0;
+
+            GetEntityPositionFromPosition(selectionLocation.position, &col, &row);
+
+            level->playerStart[0] = col;
+            level->playerStart[1] = row;
+
+            if (SaveLevel(level))
             {
-                uint8_t col = 0;
-                uint8_t row = 0;
-
-                GetEntityPositionFromPosition(selectionLocation.position, &col, &row);
-
-                level->playerStart[0] = col;
-                level->playerStart[1] = row;
-
-                if (SaveLevel(level))
-                {
-                    TraceLog(LOG_INFO, "Level saved on player position update");
-                }
-                else
-                {
-                    TraceLog(LOG_ERROR, "Error saving level to file");
-                }
+                TraceLog(LOG_INFO, "Level saved on player position update");
+            }
+            else
+            {
+                TraceLog(LOG_ERROR, "Error saving level to file");
             }
         }
     }
@@ -715,7 +684,7 @@ void UpdateGameplayScreen(void)
     if (IsKeyPressed(KEY_F2))
     {
         level->ceilHeight = (level->ceilHeight == OUTSIDE_CEIL_VALUE ? level->ceilHeight = level->floorHeight : OUTSIDE_CEIL_VALUE);
-        RefreshWalls();
+        RefreshMap();
     }
 
     if (IsKeyPressed(KEY_F11))
@@ -758,27 +727,24 @@ void UpdateGameplayScreen(void)
             level->ceilHeight = level->floorHeight;
         }
 
-        RefreshWalls();
+        RefreshMap();
     }
     else if (IsKeyPressed(KEY_PERIOD))
     {   
         // HACK: insanely inefficient way to update the blocks, basically regenerating every block. At the moment just want something functiona.
         // TODO: Do this properly
-
-        if (selectionLocation.hasSelection)
-        {   
-            if (selectionLocation.entityType == Entity_Type_Wall) 
+        if (selectionLocation.entityType == Entity_Type_Wall) 
+        {
+            _currentWallSelection += 7;
+            if (_currentWallSelection >= 64)
             {
+                _currentWallSelection -= 63;
                 _currentWallSelection += 7;
-                if (_currentWallSelection >= 64)
-                {
-                    _currentWallSelection -= 63;
-                    _currentWallSelection += 7;
-                }
-                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-                RefreshWalls();
             }
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+            RefreshMap();
         }
+        
     }
 
     if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_COMMA))
@@ -794,100 +760,89 @@ void UpdateGameplayScreen(void)
             level->ceilHeight = level->floorHeight;
         }
 
-        RefreshWalls();
+        RefreshMap();
     }
     else if (IsKeyPressed(KEY_COMMA))
     {     
-        if (selectionLocation.hasSelection)
+        
+        if (selectionLocation.entityType == Entity_Type_Wall)
         {
-            if (selectionLocation.entityType == Entity_Type_Wall)
+            _currentWallSelection -= 7;
+            if (_currentWallSelection <= 7)
             {
+                _currentWallSelection += 63;
                 _currentWallSelection -= 7;
-                if (_currentWallSelection <= 7)
-                {
-                    _currentWallSelection += 63;
-                    _currentWallSelection -= 7;
-                }
-                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-                RefreshWalls();
             }
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+            RefreshMap();
         }
+        
     }
 
     if (IsKeyPressed(KEY_DELETE))
-    {
-        if (selectionLocation.hasSelection)
-        {            
-            if (selectionLocation.entityType == Entity_Type_Wall)
-            {
-                level->mapArray[selectionLocation.mapArrayIndex] = 0;
-                RefreshWalls();
-                selectionLocation.hasSelection = false;
-            }
-            else if (selectionLocation.entityType == Entity_Type_Item)
-            {
-                uint16_t i = selectionLocation.itemIndex;                
-                while (i < MAX_ELEMENTS -1 && level->elements[i].type > 0)
-                {
-                    uint16_t next = i + 1;
-                    level->elements[i].coords[0] = level->elements[next].coords[0];
-                    level->elements[i].coords[1] = level->elements[next].coords[1];
-                    level->elements[i].type = level->elements[next].type;
-                    i++;
-                };
-                RefreshElements();
-                selectionLocation.hasSelection = false;
-            }
+    {       
+        if (selectionLocation.entityType == Entity_Type_Wall)
+        {
+            level->mapArray[selectionLocation.mapArrayIndex] = 0;
+            RefreshMap();
         }
+        else if (selectionLocation.entityType == Entity_Type_Item)
+        {
+            uint16_t i = selectionLocation.itemIndex;                
+            while (i < MAX_ELEMENTS -1 && level->elements[i].type > 0)
+            {
+                uint16_t next = i + 1;
+                level->elements[i].coords[0] = level->elements[next].coords[0];
+                level->elements[i].coords[1] = level->elements[next].coords[1];
+                level->elements[i].type = level->elements[next].type;
+                i++;
+            };
+            RefreshMap();
+        }
+        selectionLocation.entityType = Entity_Type_None;
     }
 
     if (IsKeyPressed(KEY_RIGHT_BRACKET))
     {   
-        if (selectionLocation.hasSelection)
-        {
-            if (selectionLocation.entityType == Entity_Type_Wall)
-            {            
-                _currentWallSelection++;
-                if ((_currentWallSelection - 1) % 7 == 0)
-                {
-                    _currentWallSelection -= 7;
-                }
-                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-                RefreshWalls();
-            }
-            else if (selectionLocation.entityType == Entity_Type_Item)
+        if (selectionLocation.entityType == Entity_Type_Wall)
+        {            
+            _currentWallSelection++;
+            if ((_currentWallSelection - 1) % 7 == 0)
             {
-                uint8_t t = _currentItemSelection;
-                uint8_t nextElement = GetNextElementType(t);
-                level->elements[selectionLocation.itemIndex].type = nextElement;
-                _currentItemSelection = nextElement;
-                RefreshElements();
+                _currentWallSelection -= 7;
             }
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+            RefreshMap();
+        }
+        else if (selectionLocation.entityType == Entity_Type_Item)
+        {
+            uint8_t t = _currentItemSelection;
+            uint8_t nextElement = GetNextElementType(t);
+            level->elements[selectionLocation.itemIndex].type = nextElement;
+            _currentItemSelection = nextElement;
+            RefreshMap();
         }
     }
 
     if (IsKeyPressed(KEY_LEFT_BRACKET))
-    {
-        if (selectionLocation.hasSelection)
+    {   
+        if (selectionLocation.entityType == Entity_Type_Wall)
         {
-            if (selectionLocation.entityType == Entity_Type_Wall)
+            _currentWallSelection--;
+            if ((_currentWallSelection) % 7 == 0)
             {
-                _currentWallSelection--;
-                if ((_currentWallSelection) % 7 == 0)
-                {
-                    _currentWallSelection += 7;
-                }
-                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-                RefreshWalls();
+                _currentWallSelection += 7;
             }
-            else if (selectionLocation.entityType == Entity_Type_Item)
-            {                
-                uint8_t t = _currentItemSelection;
-                uint8_t previousElement = GetPreviousElementType(t);
-                level->elements[selectionLocation.itemIndex].type = previousElement;
-                _currentItemSelection = previousElement;
-                RefreshElements();
-            }
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+            RefreshMap();
+        }
+        else if (selectionLocation.entityType == Entity_Type_Item)
+        {                
+            uint8_t t = _currentItemSelection;
+            uint8_t previousElement = GetPreviousElementType(t);
+            level->elements[selectionLocation.itemIndex].type = previousElement;
+            _currentItemSelection = previousElement;
+            RefreshMap();
         }
     }
 
@@ -984,27 +939,24 @@ void DrawGameplayScreen(void)
 
     if (currentEditorMode == Mode_Editor)
     {
-        if (selectionLocation.hasSelection)
-        {
-            int mod = _floorHeight % 4 > 0;
-            for (size_t i = 0; i < ((_floorHeight / 4) + mod); i++)
-            {   
-                Vector3 vec = { selectionLocation.position.x,(float)i + 0.5f, selectionLocation.position.z };                
-                if (selectionLocation.entityType == Entity_Type_Wall)
-                {                
-                    DrawCube(vec, 1.005f, 1.005f, 1.005f, TRANS_RED);
-                    DrawCubeWires(vec, 1.005, 1.005f, 1.005f, BLACK);
-                }
-                else if (selectionLocation.entityType == Entity_Type_Item)
-                {
-                    DrawCubeWires(vec, 1.005, 1.005f, 1.005f, RED);
-                }
-                else 
-                {
-                    DrawCubeWires(vec, 1.005, 1.005f, 1.005f, BLUE);
-                }
+        int mod = _floorHeight % 4 > 0;
+        for (size_t i = 0; i < ((_floorHeight / 4) + mod); i++)
+        {   
+            Vector3 vec = { selectionLocation.position.x,(float)i + 0.5f, selectionLocation.position.z };                
+            if (selectionLocation.entityType == Entity_Type_Wall)
+            {                
+                DrawCubeWires(vec, 1.005, 1.005f, 1.005f, BLUE);
+            }
+            else if (selectionLocation.entityType == Entity_Type_Item)
+            {
+                DrawCubeWires(vec, 1.005, 1.005f, 1.005f, RED);
+            }
+            else if (selectionLocation.entityType == Entity_Type_Free)
+            {
+                DrawCubeWires(vec, 1.005, 1.005f, 1.005f, BLACK);
             }
         }
+        
 
         DrawGrid(MAP_DIMENSION, 1.0f);
     }

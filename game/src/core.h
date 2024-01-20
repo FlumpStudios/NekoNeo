@@ -7,7 +7,8 @@
 enum EntityType {
     Entity_Type_None,
     Entity_Type_Wall,
-    Entity_Type_Item
+    Entity_Type_Item,
+    Entity_Type_Free
 };
 
 enum Mode {
@@ -57,7 +58,6 @@ typedef struct {
     Vector3 position;
     int itemIndex;
     int mapArrayIndex;
-    bool hasSelection;
     enum EntityType entityType;
 } SelectedEntity;
 
