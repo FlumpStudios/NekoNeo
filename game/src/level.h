@@ -213,6 +213,23 @@ uint8_t SFG_loadLevelFromFile(SFG_Level* buffer, uint8_t level)
     return 1;
 }
 
+void initLevel(SFG_Level* level)
+{
+    level->ceilHeight = 10;
+    level->floorHeight = 10;
+    level->ceilingColor = 5;
+    level->backgroundImage = 1;
+    level->doorTextureIndex = 1;
+    level->floorColor = 3;
+    level->playerStart[0] = 0;
+    level->playerStart[1] = 0;
+    level->playerStart[2] = 0;
+    for (int i = 0; i < 6; i++)
+    {
+        level->textureIndices[i] = i + 2;
+    }
+}
+
 
 bool SaveLevel(SFG_Level *level)
 {

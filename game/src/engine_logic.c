@@ -12,7 +12,7 @@
 #include "editorUi.h"
 #include <string.h>
 
-
+static bool _levelReady = false;
 static bool _2D_Mode = false;
 static bool _focusedMode = false;
 static uint32_t _blockCount;
@@ -77,8 +77,7 @@ void RefreshElements(void)
 
 void SetSelectionBlockLocation(void)
 {   
-    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
-    {   
+   
         selectionLocation.itemIndex = -1;
         Ray ray = { 0 };
         RayCollision collision = { 0 };
@@ -177,24 +176,28 @@ void SetSelectionBlockLocation(void)
                     selectionLocation.itemIndex = _elementCount - 1; 
 
                 }
-                else
+                else if(IsMouseButtonDown(MOUSE_BUTTON_LEFT))
                 {                
                     selectionLocation.entityType = Entity_Type_Wall;
                     level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
                     RefreshWalls();
                 }
+                else
+                {                
+                    selectionLocation.entityType = Entity_Type_None;
+                }
             }
             else 
-            {
+            {              
                 selectionLocation.entityType = Entity_Type_Wall;
-                _currentWallSelection = level->mapArray[selectionLocation.mapArrayIndex];
+                _currentWallSelection = level->mapArray[selectionLocation.mapArrayIndex];                
             }
         }
         if (_currentWallSelection > DOOR_MASK)
         {
             _currentWallSelection -= DOOR_MASK;
         }
-    }
+    
 }
 
 bool CheckLevelCollision(Vector3 entityPos, Vector3 entitySize)
@@ -476,19 +479,22 @@ void InitGameplayScreen(void)
 {
 
 #ifdef DEBUG
-    alphaDiscard = LoadShader(NULL, "C:/Projects/NekoNeo/game/src/alphaDiscard.fs");
+    alphaDiscard = LoadShader(NULL, "C:/Projects/NekoNeo/game/src/shaders/alphaDiscard.fs");
     
     level = MemAlloc(sizeof(SFG_Level));
 
-    if (level == NULL) {
+    if (level == NULL) 
+{
         TraceLog(LOG_ERROR, "Memory allocation failed on level!");
     }
     else {
-        memset(level, 0, sizeof(SFG_Level));
+        
+        memset(level,0,sizeof(SFG_Level));
 
         if (!SFG_loadLevelFromFile(level, currentLevel))
         {
             TraceLog(LOG_ERROR, "Error Loading level from file");
+            initLevel(level);
         }
         else
         {
@@ -579,7 +585,6 @@ void InitGameplayScreen(void)
     blocker = LoadTexture("assets/Blocker.png");
     playerMarker = LoadTexture("assets/PlayerMarker.png");
 #endif
-
     framesCounter = 0;
     finishScreen = 0;
 
@@ -597,6 +602,7 @@ void InitGameplayScreen(void)
     camera.projection = CAMERA_PERSPECTIVE;
     currentEditorMode = Mode_Editor;
     DisableCursor();
+    _levelReady = true;
 }
 
 void UpdateFloorHeight()
@@ -609,14 +615,18 @@ void UpdateFloorHeight()
 // Gameplay Screen Update logic
 void UpdateGameplayScreen(void)
 {
-    
+    if (!_levelReady)
+    {
+        return;
+    }
+
     if (IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE) && currentEditorMode == Mode_Editor)
     {        
         _focusedMode = !_focusedMode;
         _focusedMode ? EnableCursor() : DisableCursor();
     }
 
-    if (IsKeyPressed(KEY_P))
+    if (IsKeyPressed(KEY_T))
     {
         if (selectionLocation.hasSelection)
         {
@@ -634,6 +644,32 @@ void UpdateGameplayScreen(void)
                     level->mapArray[selectionLocation.mapArrayIndex] = (level->mapArray[selectionLocation.mapArrayIndex] + 7) & (~DOOR_MASK);
                 }
                 RefreshWalls();
+            }
+        }
+    }
+
+    if (IsKeyPressed(KEY_P))
+    {
+        if (selectionLocation.hasSelection)
+        {
+            if (selectionLocation.entityType != Entity_Type_Item)
+            {
+                uint8_t col = 0;
+                uint8_t row = 0;
+
+                GetEntityPositionFromPosition(selectionLocation.position, &col, &row);
+
+                level->playerStart[0] = col;
+                level->playerStart[1] = row;
+
+                if (SaveLevel(level))
+                {
+                    TraceLog(LOG_INFO, "Level saved on player position update");
+                }
+                else
+                {
+                    TraceLog(LOG_ERROR, "Error saving level to file");
+                }
             }
         }
     }
@@ -905,7 +941,7 @@ void UpdateGameplayScreen(void)
     }
 
 
-    // Override the default key behavior for E and Q, default is rotate
+    // Override the default key behavior for E and Q
     if (IsKeyDown(KEY_E))
     {
         if (currentEditorMode == Mode_Editor)
@@ -937,6 +973,10 @@ void UpdateGameplayScreen(void)
 void DrawGameplayScreen(void)
 {
     ClearBackground(SKYBLUE);
+    if (!_levelReady)
+    {
+        return;
+    }
 
     BeginMode3D(camera);
     DrawPlane((Vector3) { 0.0f, -0.1f, 0.0f }, (Vector2) { 256.0f, 256.0f }, GRAY);
@@ -958,7 +998,11 @@ void DrawGameplayScreen(void)
                 else if (selectionLocation.entityType == Entity_Type_Item)
                 {
                     DrawCubeWires(vec, 1.005, 1.005f, 1.005f, RED);
-                }                
+                }
+                else 
+                {
+                    DrawCubeWires(vec, 1.005, 1.005f, 1.005f, BLUE);
+                }
             }
         }
 
@@ -1005,17 +1049,14 @@ void DrawPlayerStartPosition(void)
 
     uint8_t stepSize = GetMapArrayHeightFromIndex(level->mapArray[mapArrayindex], level->floorHeight);
 
-    if (stepSize > MAX_STEP_HEIGHT)
-    {
-        stepSize = 0;
-    }
+
 
     float h = 0.25f * stepSize;
     
     float x = level->playerStart[0] + 0.5;
     float y = (size / 2) + h;
     float z = level->playerStart[1] + 0.5;
-    Vector3 pos = (Vector3){ x - MAP_DIMENSION / 2,y ,z - MAP_DIMENSION / 2 };
+    Vector3 pos = (Vector3){ x - MAP_DIMENSION / 2, y ,z - MAP_DIMENSION / 2 };
 
     if (currentRenderMode == RenerMode_Textured)
     {
@@ -1031,7 +1072,6 @@ void DrawPlayerStartPosition(void)
         DrawCubeWires(pos, 1.0f, 1.0f, 1.0f, YELLOW);
     }
 }
-
 
 void DrawElements(void)
 {
