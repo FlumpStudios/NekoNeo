@@ -11,6 +11,7 @@
 #include "rcamera.h"
 #include "editorUi.h"
 #include <string.h>
+#include "raymath.h"
 
 static bool _levelReady = false;
 static bool _2D_Mode = false;
@@ -45,7 +46,7 @@ Texture2D enderEnemy;
 Texture2D turretEnemy;
 Texture2D exploderEnemy;
 Texture2D blocker;
-Texture2D playerMarker;
+Model playerMarker;
 Shader alphaDiscard;
 
 Element* items;
@@ -70,7 +71,6 @@ void RefreshMap(void)
     _elementCount = 0;
     InitElements(true);
 }
-
 
 
 void SetSelectionBlockLocation(void)
@@ -215,27 +215,27 @@ Texture GetTextureFromElementType(uint8_t i)
     {
         switch (i)
         {
-        case 0x0d:
-        case 0x0e:
-        case 0x0f:
-            return itemTextures[12];
+            case 0x0d:
+            case 0x0e:
+            case 0x0f:
+                return itemTextures[12];
 
-        case 0x13:
-            return blocker;
-        case 0x20:
-            return spiderEnemy;
-        case 0x21:
-            return destroyerEnemy;
-        case 0x22:
-            return warriorEnemy;
-        case 0x23:
-            return plasmaBotEnemy;
-        case 0x24:
-            return enderEnemy;
-        case 0x25:
-            return turretEnemy;
-        case 0x26:
-            return exploderEnemy;
+            case 0x13:
+                return blocker;
+            case 0x20:
+                return spiderEnemy;
+            case 0x21:
+                return destroyerEnemy;
+            case 0x22:
+                return warriorEnemy;
+            case 0x23:
+                return plasmaBotEnemy;
+            case 0x24:
+                return enderEnemy;
+            case 0x25:
+                return turretEnemy;
+            case 0x26:
+                return exploderEnemy;
         }
     }
     return itemTextures[0];
@@ -265,8 +265,6 @@ void InitElements(bool saveOnComplete)
 
             uint8_t stepSize = GetMapArrayHeightFromIndex(level->mapArray[mapArrayindex], level->floorHeight);
 
-            
-
             Texture t = GetTextureFromElementType(level->elements[i].type);
             float h = 0.25f * stepSize;
             float x = level->elements[i].coords[0] + 0.5;
@@ -275,7 +273,7 @@ void InitElements(bool saveOnComplete)
             float z = level->elements[i].coords[1] + 0.5;
             Vector3 pos = (Vector3){ x - MAP_DIMENSION / 2,y ,z - MAP_DIMENSION / 2 };
             
-            Vector3 elementSize = (Vector3){ 1.0f, 1.0f, 1.0f };
+            Vector3 elementSize = (Vector3){ 0.95f, 0.95f, 0.95f };
 
             BoundingBox elementbox = (BoundingBox){ (Vector3) {
                         pos.x - elementSize.x / 2,
@@ -505,7 +503,7 @@ void InitGameplayScreen(void)
     turretEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_13.png");
     exploderEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_16.png");
     blocker = LoadTexture("C:/Projects/NekoEngine/assets/Blocker.png");
-    playerMarker = LoadTexture("C:/Projects/NekoEngine/assets/PlayerMarker.png");
+    playerMarker = LoadModel("C:/Projects/NekoEngine/assets/PlayerStartPosition.obj");
 
 #else
     alphaDiscard = LoadShader(NULL, "data/alphaDiscard.fs");
@@ -557,7 +555,7 @@ void InitGameplayScreen(void)
     turretEnemy = LoadTexture("Enemies/o_13.png");
     exploderEnemy = LoadTexture("Enemies/o_16.png");
     blocker = LoadTexture("assets/Blocker.png");
-    playerMarker = LoadTexture("assets/PlayerMarker.png");
+    playerMarker = LoadModel("assets/PlayerStartPosition.obj");
 #endif
     framesCounter = 0;
     finishScreen = 0;
@@ -598,6 +596,25 @@ void UpdateGameplayScreen(void)
     {        
         _focusedMode = !_focusedMode;
         _focusedMode ? EnableCursor() : DisableCursor();
+    }
+
+    if (IsKeyDown(KEY_F6))
+    {
+        level->playerStart[2]++;
+        if (level->playerStart[2] >= 254)
+        {
+            level->playerStart[2] = 0;
+        }
+
+    }
+    
+    if (IsKeyDown(KEY_F5))
+    {
+        level->playerStart[2]--;
+        if (level->playerStart[2] <= 0)
+        {
+            level->playerStart[2] = 255;
+        }
     }
 
     if (IsKeyPressed(KEY_T))
@@ -649,8 +666,7 @@ void UpdateGameplayScreen(void)
         static bool was_orignally_focusedmode;        
         static Vector3 orignal_cam_pos;
         static Vector3 orignal_cam_target;
-        static bool was_cursor_hidden;
-  
+        static bool was_cursor_hidden;  
 
         _2D_Mode = !_2D_Mode;
         if (_2D_Mode)
@@ -895,7 +911,6 @@ void UpdateGameplayScreen(void)
         camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
     }
 
-
     // Override the default key behavior for E and Q
     if (IsKeyDown(KEY_E))
     {
@@ -940,23 +955,47 @@ void DrawGameplayScreen(void)
     if (currentEditorMode == Mode_Editor)
     {
         int mod = _floorHeight % 4 > 0;
-        for (size_t i = 0; i < ((_floorHeight / 4) + mod); i++)
-        {   
-            Vector3 vec = { selectionLocation.position.x,(float)i + 0.5f, selectionLocation.position.z };                
-            if (selectionLocation.entityType == Entity_Type_Wall)
-            {                
-                DrawCubeWires(vec, 1.005, 1.005f, 1.005f, BLUE);
-            }
-            else if (selectionLocation.entityType == Entity_Type_Item)
+        
+        if (selectionLocation.entityType == Entity_Type_Wall)
+        {
+            size_t range = ((_floorHeight / 4) + mod);
+            for (size_t i = 0; i < range; i++)
             {
-                DrawCubeWires(vec, 1.005, 1.005f, 1.005f, RED);
-            }
-            else if (selectionLocation.entityType == Entity_Type_Free)
-            {
-                DrawCubeWires(vec, 1.005, 1.005f, 1.005f, BLACK);
+                float h = SELECTION_BOX_SIZE;
+                float y = (float)i;
+                
+                if (i == range - 1)
+                {                
+                    float floor_mod = 0.25f * (_floorHeight % 4);
+
+                    if (floor_mod == 0) { floor_mod = 1; }
+
+                    h = SELECTION_BOX_SIZE * floor_mod;
+                    y += h / 2;
+                }
+                else                    
+                {
+                    y += 0.5f;
+                }
+                                
+                Vector3 vec = { selectionLocation.position.x,y, selectionLocation.position.z };
+                if (selectionLocation.entityType == Entity_Type_Wall)
+                {
+                    DrawCube(vec, SELECTION_BOX_SIZE, h, SELECTION_BOX_SIZE, TRANS_BLUE);
+                    DrawCubeWires(vec, SELECTION_BOX_SIZE, h, SELECTION_BOX_SIZE, BLACK);                    
+                }                
             }
         }
-        
+        else if (selectionLocation.entityType == Entity_Type_Item)
+        {
+            Vector3 vec = { selectionLocation.position.x,selectionLocation.position.y, selectionLocation.position.z };
+            DrawCubeWires(vec, SELECTION_BOX_SIZE, SELECTION_BOX_SIZE, SELECTION_BOX_SIZE, BLACK);
+        }
+        else if (selectionLocation.entityType == Entity_Type_Free)
+        {
+            Vector3 vec = { selectionLocation.position.x, 0.5f , selectionLocation.position.z };
+            DrawCubeWires(vec, SELECTION_BOX_SIZE, SELECTION_BOX_SIZE, SELECTION_BOX_SIZE, WHITE);
+        }
 
         DrawGrid(MAP_DIMENSION, 1.0f);
     }
@@ -1002,17 +1041,22 @@ void DrawPlayerStartPosition(void)
     uint8_t stepSize = GetMapArrayHeightFromIndex(level->mapArray[mapArrayindex], level->floorHeight);
 
 
-
-    float h = 0.25f * stepSize;
-    
+    float h = 0.25f * stepSize;    
     float x = level->playerStart[0] + 0.5;
     float y = (size / 2) + h;
     float z = level->playerStart[1] + 0.5;
     Vector3 pos = (Vector3){ x - MAP_DIMENSION / 2, y ,z - MAP_DIMENSION / 2 };
-
+    
+    Vector3 source = { 0.f,-1.f,0.f };
+    Vector3 scale = { 0.01f, 0.01f,0.01f };
+    float rotationSource = DEGRESS_TO_BYTE_CONVERSION * (float)(level->playerStart[2]);
     if (currentRenderMode == RenerMode_Textured)
     {
-        DrawBillboard(camera, playerMarker, pos, 1.0f, WHITE);
+        if (IsModelReady(playerMarker))
+        {        
+            DrawModelEx(playerMarker, pos, source, rotationSource, scale, WHITE);
+            // DrawModel(playerMarker, pos, 0.005f, WHITE);
+        }
     }
     else if (currentRenderMode == RenerMode_Colored)
     {

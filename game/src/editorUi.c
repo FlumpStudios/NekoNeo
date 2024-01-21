@@ -33,6 +33,9 @@ static void DrawControls()
     DrawText("- Set player start position : P", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
+    DrawText("- Rotate player start position : F5/F6 : P", 15, y, 10, TEXT_COLOUR);
+    y += SPACING;
+
     DrawText("- Toggle fullsreen : F11", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
