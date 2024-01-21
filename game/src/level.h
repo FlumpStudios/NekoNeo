@@ -62,6 +62,7 @@ typedef uint8_t SFG_MapArray[SFG_MAP_SIZE * SFG_MAP_SIZE];
 #define SFG_TILE_PROPERTY_ELEVATOR 0x40
 #define SFG_TILE_PROPERTY_SQUEEZER 0x80
 #define SFG_TILE_PROPERTY_DOOR 0xc0
+#define SFG_MAX_LEVEL_ELEMENTS 128
 
 /**
   Serves to place elements (items, enemies etc.) into the game level.
@@ -72,7 +73,6 @@ typedef struct
     uint8_t coords[2];
 } SFG_LevelElement;
 
-#define SFG_MAX_LEVEL_ELEMENTS 128
 
 /*
   Definitions of level element type. These values must leave the highest bit
@@ -142,6 +142,11 @@ typedef struct
     uint8_t floorHeight;
 } SFG_Level;
 
+
+typedef struct {
+    SFG_Level* history;
+    int currentIndex;    
+} LevelHistory;
 #define SFG_NUMBER_OF_LEVELS 10
 
 

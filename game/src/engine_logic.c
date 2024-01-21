@@ -31,6 +31,9 @@ static uint8_t currentLevel = DEBUG_LEVEL;
 static SFG_Level* level;
 static Camera3D camera = { 0 };
 
+static LevelHistory _levelHistory;
+static size_t _historySize = INITIAL_HISTORY_BUFFER_SIZE;
+
 enum Mode currentEditorMode = Mode_Editor;
 enum EditorRenderMode currentRenderMode = RenerMode_Textured;
 
@@ -51,7 +54,6 @@ Shader alphaDiscard;
 
 Element* items;
 MapBlock* mapBlocks;
-
 SelectedEntity selectionLocation = { 0 };
 
 // Forward declarations
@@ -59,7 +61,36 @@ void InitWalls(bool saveOnComplete);
 void InitElements(bool saveOnComplete);
 void DrawPlayerStartPosition(void);
 
-void RefreshMap(void)
+void UpdateHistory(void)
+{
+    if (_levelHistory.currentIndex >= _historySize - 2)
+    {
+        size_t originalSize = sizeof(SFG_Level) * _historySize;
+
+        SFG_Level* buffer = MemAlloc(originalSize);
+        assert(buffer);
+        memcpy(buffer, _levelHistory.history, originalSize);
+        MemFree(_levelHistory.history);
+
+        _historySize *= 2;
+        size_t newSize = sizeof(SFG_Level) * _historySize;
+
+        _levelHistory.history = MemAlloc(newSize);
+        assert(_levelHistory.history);
+
+        memcpy(_levelHistory.history, buffer, newSize);
+
+        MemFree(buffer);
+
+        TraceLog(LOG_INFO, "History buffer realloced, now size of %i and can contain %i elements", newSize, _historySize);
+    }
+
+    _levelHistory.currentIndex++;
+    _levelHistory.history[_levelHistory.currentIndex] = *level;
+    memset(&_levelHistory.history[_levelHistory.currentIndex + 1], 0, sizeof(SFG_Level));
+}
+
+void RefreshMap(bool updateHistory)
 {
     free(mapBlocks);
     mapBlocks = NULL;
@@ -70,8 +101,12 @@ void RefreshMap(void)
     items = NULL;
     _elementCount = 0;
     InitElements(true);
+    
+    if (updateHistory)
+    {    
+        UpdateHistory();
+    }    
 }
-
 
 void SetSelectionBlockLocation(void)
 {
@@ -159,14 +194,14 @@ void SetSelectionBlockLocation(void)
             level->elements[_elementCount].coords[0] = col;
             level->elements[_elementCount].coords[1] = row;
             level->elements[_elementCount].type = _currentItemSelection;
-            RefreshMap();
+            RefreshMap(true);
             selectionLocation.itemIndex = _elementCount - 1;
         }
 
         if (foundEntityType != Entity_Type_Wall && IsMouseButtonDown(MOUSE_BUTTON_LEFT))
         {
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-            RefreshMap();
+            RefreshMap(true);
         }
         
 
@@ -560,6 +595,10 @@ void InitGameplayScreen(void)
     framesCounter = 0;
     finishScreen = 0;
 
+    _levelHistory.history = MemAlloc(sizeof(SFG_Level) * _historySize);
+    assert(_levelHistory.history);
+    memset(_levelHistory.history, 0, sizeof(SFG_Level)* _historySize);
+    
     if (level)
     {
         camera.position = (Vector3){ level->playerStart[0] - (MAP_DIMENSION / 2) , 1.0f, level->playerStart[1] - (MAP_DIMENSION / 2) };
@@ -574,6 +613,13 @@ void InitGameplayScreen(void)
     camera.projection = CAMERA_PERSPECTIVE;
     currentEditorMode = Mode_Editor;
     DisableCursor();
+    
+    // Initial level history
+    if (level)
+    {       
+        memcpy(&_levelHistory.history[0], level, sizeof(SFG_Level));
+    }
+
     _levelReady = true;
 }
 
@@ -598,6 +644,29 @@ void UpdateGameplayScreen(void)
         _focusedMode ? EnableCursor() : DisableCursor();
     }
 
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z))
+    {
+        if (_levelHistory.currentIndex > 0)
+        {
+            _levelHistory.currentIndex--;
+            memcpy(level, &_levelHistory.history[_levelHistory.currentIndex], sizeof(SFG_Level));
+            RefreshMap(false);
+
+        }
+    }
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Y))
+    {
+            SFG_Level a = _levelHistory.history[_levelHistory.currentIndex + 1];
+            if (a.floorHeight > 0 && a.ceilHeight > 0)
+            {
+                _levelHistory.currentIndex++;
+                memcpy(level, &_levelHistory.history[_levelHistory.currentIndex], sizeof(SFG_Level));
+                RefreshMap(false);            
+            }
+    }
+
+
+    static bool isPlayerRotatingRight = false;
     if (IsKeyDown(KEY_F6))
     {
         level->playerStart[2]++;
@@ -605,15 +674,35 @@ void UpdateGameplayScreen(void)
         {
             level->playerStart[2] = 0;
         }
-
+        isPlayerRotatingRight = true;
     }
-    
+    else
+    {
+        // Save on key up
+        if (isPlayerRotatingRight == true)
+        {
+            RefreshMap(true);
+            isPlayerRotatingRight = false;
+        }
+    }
+
+    static bool isPlayerRotatingLeft = false;
     if (IsKeyDown(KEY_F5))
     {
         level->playerStart[2]--;
         if (level->playerStart[2] <= 0)
         {
             level->playerStart[2] = 255;
+        }
+        isPlayerRotatingLeft = true;
+    }
+    else
+    {
+        // Save on key up
+        if (isPlayerRotatingLeft == true)
+        {
+            RefreshMap(true);
+            isPlayerRotatingLeft = false;
         }
     }
 
@@ -632,13 +721,12 @@ void UpdateGameplayScreen(void)
             {
                 level->mapArray[selectionLocation.mapArrayIndex] = (level->mapArray[selectionLocation.mapArrayIndex] + 7) & (~DOOR_MASK);
             }
-            RefreshMap();
+            RefreshMap(true);
         }
     }
 
     if (IsKeyPressed(KEY_P))
     {
-  
         if (selectionLocation.entityType != Entity_Type_Item)
         {
             uint8_t col = 0;
@@ -658,6 +746,7 @@ void UpdateGameplayScreen(void)
                 TraceLog(LOG_ERROR, "Error saving level to file");
             }
         }
+        RefreshMap(true);
     }
 
 
@@ -700,7 +789,7 @@ void UpdateGameplayScreen(void)
     if (IsKeyPressed(KEY_F2))
     {
         level->ceilHeight = (level->ceilHeight == OUTSIDE_CEIL_VALUE ? level->ceilHeight = level->floorHeight : OUTSIDE_CEIL_VALUE);
-        RefreshMap();
+        RefreshMap(true);
     }
 
     if (IsKeyPressed(KEY_F11))
@@ -743,7 +832,7 @@ void UpdateGameplayScreen(void)
             level->ceilHeight = level->floorHeight;
         }
 
-        RefreshMap();
+        RefreshMap(true);
     }
     else if (IsKeyPressed(KEY_PERIOD))
     {   
@@ -758,7 +847,7 @@ void UpdateGameplayScreen(void)
                 _currentWallSelection += 7;
             }
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-            RefreshMap();
+            RefreshMap(true);
         }
         
     }
@@ -776,7 +865,7 @@ void UpdateGameplayScreen(void)
             level->ceilHeight = level->floorHeight;
         }
 
-        RefreshMap();
+        RefreshMap(true);
     }
     else if (IsKeyPressed(KEY_COMMA))
     {     
@@ -790,7 +879,7 @@ void UpdateGameplayScreen(void)
                 _currentWallSelection -= 7;
             }
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-            RefreshMap();
+            RefreshMap(true);
         }
         
     }
@@ -800,7 +889,7 @@ void UpdateGameplayScreen(void)
         if (selectionLocation.entityType == Entity_Type_Wall)
         {
             level->mapArray[selectionLocation.mapArrayIndex] = 0;
-            RefreshMap();
+            RefreshMap(true);
         }
         else if (selectionLocation.entityType == Entity_Type_Item)
         {
@@ -813,7 +902,7 @@ void UpdateGameplayScreen(void)
                 level->elements[i].type = level->elements[next].type;
                 i++;
             };
-            RefreshMap();
+            RefreshMap(true);
         }
         selectionLocation.entityType = Entity_Type_None;
     }
@@ -828,7 +917,7 @@ void UpdateGameplayScreen(void)
                 _currentWallSelection -= 7;
             }
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-            RefreshMap();
+            RefreshMap(true);
         }
         else if (selectionLocation.entityType == Entity_Type_Item)
         {
@@ -836,7 +925,7 @@ void UpdateGameplayScreen(void)
             uint8_t nextElement = GetNextElementType(t);
             level->elements[selectionLocation.itemIndex].type = nextElement;
             _currentItemSelection = nextElement;
-            RefreshMap();
+            RefreshMap(true);
         }
     }
 
@@ -850,7 +939,7 @@ void UpdateGameplayScreen(void)
                 _currentWallSelection += 7;
             }
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-            RefreshMap();
+            RefreshMap(true);
         }
         else if (selectionLocation.entityType == Entity_Type_Item)
         {                
@@ -858,7 +947,7 @@ void UpdateGameplayScreen(void)
             uint8_t previousElement = GetPreviousElementType(t);
             level->elements[selectionLocation.itemIndex].type = previousElement;
             _currentItemSelection = previousElement;
-            RefreshMap();
+            RefreshMap(true);
         }
     }
 
@@ -925,6 +1014,10 @@ void UpdateGameplayScreen(void)
         {
             camera.position.y -= 0.1f;
         }
+    }
+    else if (IsKeyDown(KEY_LEFT_CONTROL))
+    {
+        
     }
     else
     {
