@@ -49,6 +49,7 @@ Texture2D enderEnemy;
 Texture2D turretEnemy;
 Texture2D exploderEnemy;
 Texture2D blocker;
+Texture2D lock;
 Model playerMarker;
 Shader alphaDiscard;
 
@@ -81,8 +82,6 @@ void UpdateHistory(void)
         memcpy(_levelHistory.history, buffer, newSize);
 
         MemFree(buffer);
-
-        TraceLog(LOG_INFO, "History buffer realloced, now size of %i and can contain %i elements", newSize, _historySize);
     }
 
     _levelHistory.currentIndex++;
@@ -237,6 +236,37 @@ bool CheckLevelCollision(Vector3 entityPos, Vector3 entitySize)
     return false;
 }
 
+
+
+void RemoveElement(uint16_t i)
+{
+    while (i < MAX_ELEMENTS - 1 && level->elements[i].type > 0)
+    {
+        uint16_t next = i + 1;
+        level->elements[i].coords[0] = level->elements[next].coords[0];
+        level->elements[i].coords[1] = level->elements[next].coords[1];
+        level->elements[i].type = level->elements[next].type;
+        i++;
+    };
+}
+
+int DoesPositionHaveDoor(Vector3 location)
+{
+    uint8_t x = 0;
+    uint8_t y = 0;
+
+    GetEntityPositionFromPosition(location, &x, &y);
+    
+    for (size_t i = 0; i < _elementCount; i++)
+    {
+        if (level->elements[i].coords[0] == x && level->elements[i].coords[1] == y)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 Texture GetTextureFromElementType(uint8_t i)
 {
     assert(i > 0);
@@ -271,6 +301,10 @@ Texture GetTextureFromElementType(uint8_t i)
                 return turretEnemy;
             case 0x26:
                 return exploderEnemy;
+            case SFG_LEVEL_ELEMENT_LOCK0:
+            case SFG_LEVEL_ELEMENT_LOCK1:
+            case SFG_LEVEL_ELEMENT_LOCK2:
+                return lock;
         }
     }
     return itemTextures[0];
@@ -321,6 +355,7 @@ void InitElements(bool saveOnComplete)
                         pos.z + elementSize.z / 2
                     } };
 
+            items[i].type = level->elements[i].type;
             items[i].position = pos;
             items[i].boundingBox = elementbox;
             items[i].texture = t;
@@ -538,6 +573,7 @@ void InitGameplayScreen(void)
     turretEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_13.png");
     exploderEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_16.png");
     blocker = LoadTexture("C:/Projects/NekoEngine/assets/Blocker.png");
+    lock = LoadTexture("C:/Projects/NekoEngine/assets/lock.png");
     playerMarker = LoadModel("C:/Projects/NekoEngine/assets/PlayerStartPosition.obj");
 
 #else
@@ -591,6 +627,7 @@ void InitGameplayScreen(void)
     exploderEnemy = LoadTexture("Enemies/o_16.png");
     blocker = LoadTexture("assets/Blocker.png");
     playerMarker = LoadModel("assets/PlayerStartPosition.obj");
+    lock = LoadTexture("assets/lock.png");
 #endif
     framesCounter = 0;
     finishScreen = 0;
@@ -656,13 +693,13 @@ void UpdateGameplayScreen(void)
     }
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Y))
     {
-            SFG_Level a = _levelHistory.history[_levelHistory.currentIndex + 1];
-            if (a.floorHeight > 0 && a.ceilHeight > 0)
-            {
-                _levelHistory.currentIndex++;
-                memcpy(level, &_levelHistory.history[_levelHistory.currentIndex], sizeof(SFG_Level));
-                RefreshMap(false);            
-            }
+        SFG_Level a = _levelHistory.history[_levelHistory.currentIndex + 1];
+        if (a.floorHeight > 0 && a.ceilHeight > 0)
+        {
+            _levelHistory.currentIndex++;
+            memcpy(level, &_levelHistory.history[_levelHistory.currentIndex], sizeof(SFG_Level));
+            RefreshMap(false);            
+        }
     }
 
 
@@ -706,6 +743,38 @@ void UpdateGameplayScreen(void)
         }
     }
 
+    if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_THREE))
+    {
+        if (selectionLocation.entityType == Entity_Type_Wall)
+        {        
+            if (level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK)
+            {
+                uint8_t x = 0;
+                uint8_t y = 0;
+
+                GetEntityPositionFromPosition(selectionLocation.position, &x, &y);
+
+                level->elements[_elementCount].coords[0] = x;
+                level->elements[_elementCount].coords[1] = y;
+                
+                if (IsKeyPressed(KEY_ONE))
+                {
+                    level->elements[_elementCount].type = SFG_LEVEL_ELEMENT_LOCK0;
+                }
+                else if (IsKeyPressed(KEY_TWO))
+                {
+                    level->elements[_elementCount].type = SFG_LEVEL_ELEMENT_LOCK1;
+                }
+                else if (IsKeyPressed(KEY_THREE))
+                {
+                    level->elements[_elementCount].type = SFG_LEVEL_ELEMENT_LOCK2;
+                }
+                _elementCount++;
+                RefreshMap(true);
+            }
+        }
+    }
+    
     if (IsKeyPressed(KEY_T))
     {
         if (selectionLocation.entityType == Entity_Type_Wall)
@@ -720,6 +789,11 @@ void UpdateGameplayScreen(void)
             else
             {
                 level->mapArray[selectionLocation.mapArrayIndex] = (level->mapArray[selectionLocation.mapArrayIndex] + 7) & (~DOOR_MASK);
+                int k = DoesPositionHaveDoor(selectionLocation.position);
+                if(k >= 0)
+                {
+                    RemoveElement(k);
+                }
             }
             RefreshMap(true);
         }
@@ -836,6 +910,11 @@ void UpdateGameplayScreen(void)
     }
     else if (IsKeyPressed(KEY_PERIOD))
     {   
+        if (level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK)
+        {
+            return;
+        }
+
         // HACK: insanely inefficient way to update the blocks, basically regenerating every block. At the moment just want something functiona.
         // TODO: Do this properly
         if (selectionLocation.entityType == Entity_Type_Wall) 
@@ -869,6 +948,11 @@ void UpdateGameplayScreen(void)
     }
     else if (IsKeyPressed(KEY_COMMA))
     {     
+
+        if (level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK)
+        {
+            return;
+        }
         
         if (selectionLocation.entityType == Entity_Type_Wall)
         {
@@ -893,15 +977,7 @@ void UpdateGameplayScreen(void)
         }
         else if (selectionLocation.entityType == Entity_Type_Item)
         {
-            uint16_t i = selectionLocation.itemIndex;                
-            while (i < MAX_ELEMENTS -1 && level->elements[i].type > 0)
-            {
-                uint16_t next = i + 1;
-                level->elements[i].coords[0] = level->elements[next].coords[0];
-                level->elements[i].coords[1] = level->elements[next].coords[1];
-                level->elements[i].type = level->elements[next].type;
-                i++;
-            };
+            RemoveElement(selectionLocation.itemIndex);
             RefreshMap(true);
         }
         selectionLocation.entityType = Entity_Type_None;
@@ -910,13 +986,25 @@ void UpdateGameplayScreen(void)
     if (IsKeyPressed(KEY_RIGHT_BRACKET))
     {   
         if (selectionLocation.entityType == Entity_Type_Wall)
-        {            
+        {    
+            bool isDoor = level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK;
+
             _currentWallSelection++;
             if ((_currentWallSelection - 1) % 7 == 0)
             {
                 _currentWallSelection -= 7;
             }
-            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+
+            if (isDoor)
+            {
+                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection | DOOR_MASK;
+            }
+            else
+            {
+                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+            }
+
+
             RefreshMap(true);
         }
         else if (selectionLocation.entityType == Entity_Type_Item)
@@ -933,12 +1021,23 @@ void UpdateGameplayScreen(void)
     {   
         if (selectionLocation.entityType == Entity_Type_Wall)
         {
+            bool isDoor = level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK;
+
             _currentWallSelection--;
             if ((_currentWallSelection) % 7 == 0)
             {
                 _currentWallSelection += 7;
             }
-            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+            
+            if (isDoor)
+            {
+                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection | DOOR_MASK;
+            }
+            else
+            {
+                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+            }
+
             RefreshMap(true);
         }
         else if (selectionLocation.entityType == Entity_Type_Item)
@@ -1093,11 +1192,12 @@ void DrawGameplayScreen(void)
         DrawGrid(MAP_DIMENSION, 1.0f);
     }
     
-    BeginShaderMode(alphaDiscard);
     if (currentEditorMode == Mode_Editor)
     {
         DrawPlayerStartPosition();
     }
+
+    BeginShaderMode(alphaDiscard);
     DrawElements();    
     EndShaderMode(alphaDiscard);   
     EndMode3D();
@@ -1168,7 +1268,22 @@ void DrawElements(void)
     {
         if (currentRenderMode == RenerMode_Textured)
         {
-            DrawBillboard(camera, items[i].texture, items[i].position, items[i].size, WHITE);
+            if (items[i].type == SFG_LEVEL_ELEMENT_CARD0 || items[i].type == SFG_LEVEL_ELEMENT_LOCK0)
+            {
+                DrawBillboard(camera, items[i].texture, items[i].position, items[i].size, RED);
+            }
+            else if (items[i].type == SFG_LEVEL_ELEMENT_CARD1 || items[i].type == SFG_LEVEL_ELEMENT_LOCK1)
+            {
+                DrawBillboard(camera, items[i].texture, items[i].position, items[i].size, GREEN);
+            }
+            else if (items[i].type == SFG_LEVEL_ELEMENT_CARD2 || items[i].type == SFG_LEVEL_ELEMENT_LOCK2)
+            {
+                DrawBillboard(camera, items[i].texture, items[i].position, items[i].size, BLUE);
+            }
+            else
+            {            
+                DrawBillboard(camera, items[i].texture, items[i].position, items[i].size, WHITE);
+            }
         }
         else if (currentRenderMode == RenerMode_Colored)
         {

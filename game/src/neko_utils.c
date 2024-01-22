@@ -208,3 +208,4 @@ uint8_t GetPreviousElementType(uint8_t currentItem)
 
     return 0x26;
 }
+
