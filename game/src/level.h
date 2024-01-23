@@ -183,7 +183,7 @@ void InvertArrayWidth(uint8_t* inputArray, size_t arrayLength)
 
     MemFree(tempArray);
 }
-uint8_t SFG_loadLevelFromFile(SFG_Level* buffer, uint8_t level)
+uint8_t SFG_loadLevelFromFile(SFG_Level* buffer, const char* level)
 {
     if (buffer == NULL) {
         return 0;
@@ -193,7 +193,7 @@ uint8_t SFG_loadLevelFromFile(SFG_Level* buffer, uint8_t level)
 
 #ifdef DEBUG
     
-    snprintf(levelString, sizeof(levelString), "C:\\Projects\\NekoEngine\\levels\\level%02u.HAD", level);
+    snprintf(levelString, sizeof(levelString), "C:\\Projects\\NekoEngine\\levels\\%s.HAD", level);
 #else
     snprintf(levelString, sizeof(levelString), "levels/level%02u.HAD", level);
 #endif

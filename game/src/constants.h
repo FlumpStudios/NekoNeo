@@ -22,7 +22,7 @@
 #define PLAYER_HEIGHT 0.65f
 #define DOOR_MASK 0xc0
 #define BLOCK_HEIGHT 0.25f
-#define DEBUG_LEVEL 99
+#define DEBUG_LEVEL "level99"
 #define WALL_TEXTURE_COUNT 15
 #define ITEM_COUNT 13
 #define WEAPON_COUNT 5

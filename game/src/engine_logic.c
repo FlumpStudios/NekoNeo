@@ -26,7 +26,6 @@ static int finishScreen = 0;
 static int _currentWallSelection = 8;
 static int _currentItemSelection = 1;
 static int cameraMode = CAMERA_FREE;
-static uint8_t currentLevel = DEBUG_LEVEL;
 static SFG_Level* level;
 static Camera3D camera = { 0 };
 
@@ -68,6 +67,38 @@ ConsoleHistory _consoleHistory[CONSOLE_HISTORY_SIZE];
 void InitWalls(bool saveOnComplete);
 void InitElements(bool saveOnComplete);
 void DrawPlayerStartPosition(void);
+void RefreshMap(bool updateHistory);
+
+
+void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
+{
+    if (strcmp(inputString, "load", 4))
+    {
+        const char* spacePos = strstr(inputString, " ");
+
+        if (spacePos != NULL) {
+            // Extract the substring after the space
+            const char* path = spacePos + 1;
+
+            // Print the extracted path
+
+            if (!SFG_loadLevelFromFile(level, path))
+            {
+                responseBuffer = "Error loading file";
+            }
+            else
+            {       
+                responseBuffer = "level loaded";
+                RefreshMap(true);
+            }
+
+        }
+        else {
+            printf("Space character not found in the input string.\n");
+        }
+    }
+}
+
 
 void HandleConsoleInput(void)
 {   
@@ -104,6 +135,11 @@ void HandleConsoleInput(void)
                 _consoleHistory[i] = _consoleHistory[i - 1];
             }
         }
+
+        char responseString[MAX_INPUT_CHARS] = {0};
+
+
+        ConsoleQuery(name, responseString, MAX_INPUT_CHARS);
 
         memcpy(&_consoleHistory[0], &name, sizeof(char) * MAX_INPUT_CHARS);
         memset(&name, 0, sizeof(char) * MAX_INPUT_CHARS);
@@ -620,7 +656,7 @@ void InitGameplayScreen(void)
         
         memset(level,0,sizeof(SFG_Level));
 
-        if (!SFG_loadLevelFromFile(level, currentLevel))
+        if (!SFG_loadLevelFromFile(level, DEBUG_LEVEL))
         {
             TraceLog(LOG_ERROR, "Error Loading level from file");
             initLevel(level);
