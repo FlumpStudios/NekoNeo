@@ -41,6 +41,9 @@ static void DrawControls()
 
     DrawText("- Toggle level outside : F2", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
+
+    DrawText("- Add lock to door : 1,2,3. Zero to remove", 15, y, 10, TEXT_COLOUR);
+    y += SPACING;
     
     DrawText("- Focus mode (lock cam and reveal cursor): Middle mouse", 15, y, 10, TEXT_COLOUR);
     y += SPACING;

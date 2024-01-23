@@ -180,8 +180,8 @@ void SetSelectionBlockLocation(void)
             selectionLocation.entityType = Entity_Type_Item;
             selectionLocation.itemIndex = nearestSelection;
             selectionLocation.position = items[nearestSelection].position;
-            selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
-            _currentItemSelection = level->elements[nearestSelection].type;
+            selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);            
+            _currentItemSelection = level->elements[nearestSelection].type;            
         }
         
         if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && foundEntityType != Entity_Type_Item)
@@ -344,16 +344,24 @@ void InitElements(bool saveOnComplete)
             
             Vector3 elementSize = (Vector3){ 0.95f, 0.95f, 0.95f };
 
-            BoundingBox elementbox = (BoundingBox){ (Vector3) {
-                        pos.x - elementSize.x / 2,
-                        pos.y - elementSize.y / 2,
-                        pos.z - elementSize.z / 2
-                    },
-                    (Vector3) {
-                        pos.x + elementSize.x / 2,
-                        pos.y + elementSize.y / 2,
-                        pos.z + elementSize.z / 2
-                    } };
+
+            BoundingBox elementbox = {0};
+
+            if (level->elements[i].type < SFG_LEVEL_ELEMENT_LOCK0 || level->elements[i].type > SFG_LEVEL_ELEMENT_LOCK2)
+            {
+                elementbox = (BoundingBox){ (Vector3) {
+                            pos.x - elementSize.x / 2,
+                            pos.y - elementSize.y / 2,
+                            pos.z - elementSize.z / 2
+                        },
+                        (Vector3) {
+                            pos.x + elementSize.x / 2,
+                            pos.y + elementSize.y / 2,
+                            pos.z + elementSize.z / 2
+                        } 
+                };                
+            }
+
 
             items[i].type = level->elements[i].type;
             items[i].position = pos;
@@ -743,6 +751,20 @@ void UpdateGameplayScreen(void)
         }
     }
 
+    if (IsKeyPressed(KEY_ZERO))
+    {
+        if (selectionLocation.entityType == Entity_Type_Wall && level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK)
+        {
+            int index = DoesPositionHaveDoor(selectionLocation.position);
+        
+            if (index >= 0)
+            {
+                RemoveElement(index);
+                RefreshMap(true);
+            }        
+        }
+    }
+
     if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_THREE))
     {
         if (selectionLocation.entityType == Entity_Type_Wall)
@@ -753,23 +775,37 @@ void UpdateGameplayScreen(void)
                 uint8_t y = 0;
 
                 GetEntityPositionFromPosition(selectionLocation.position, &x, &y);
+                
+                
+                int index = DoesPositionHaveDoor(selectionLocation.position);                
+                bool incCounter = false;
+
+                if (index < 0)
+                {                
+                    index = _elementCount;
+                    incCounter = true;
+                }
 
                 level->elements[_elementCount].coords[0] = x;
                 level->elements[_elementCount].coords[1] = y;
                 
                 if (IsKeyPressed(KEY_ONE))
                 {
-                    level->elements[_elementCount].type = SFG_LEVEL_ELEMENT_LOCK0;
+                    level->elements[index].type = SFG_LEVEL_ELEMENT_LOCK0;
                 }
                 else if (IsKeyPressed(KEY_TWO))
                 {
-                    level->elements[_elementCount].type = SFG_LEVEL_ELEMENT_LOCK1;
+                    level->elements[index].type = SFG_LEVEL_ELEMENT_LOCK1;
                 }
                 else if (IsKeyPressed(KEY_THREE))
                 {
-                    level->elements[_elementCount].type = SFG_LEVEL_ELEMENT_LOCK2;
+                    level->elements[index].type = SFG_LEVEL_ELEMENT_LOCK2;
                 }
-                _elementCount++;
+                if (incCounter)
+                {                
+                    _elementCount++;
+                }
+
                 RefreshMap(true);
             }
         }
@@ -972,6 +1008,16 @@ void UpdateGameplayScreen(void)
     {       
         if (selectionLocation.entityType == Entity_Type_Wall)
         {
+            if(level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK)
+            { 
+
+                int doorIndex = DoesPositionHaveDoor(selectionLocation.position);
+                if (doorIndex >= 0)
+                {                    
+                    RemoveElement(doorIndex);
+                }
+            }
+
             level->mapArray[selectionLocation.mapArrayIndex] = 0;
             RefreshMap(true);
         }
