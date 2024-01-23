@@ -14,7 +14,8 @@ enum EntityType {
 enum Mode {
   Mode_Editor,
   Mode_Game,
-  Mode_Scene
+  Mode_Scene,
+  Mode_Console
 };
 
 enum EditorRenderMode {

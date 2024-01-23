@@ -26,10 +26,12 @@ int main(void)
     emscripten_set_main_loop(UpdateDrawFrame, 60, 1);
 #else
     SetTargetFPS(60);
+    SetExitKey(KEY_NULL);
 
     // Main game loop
     while (!WindowShouldClose())   
-    {
+    {     
+        // Update and draw frame
         UpdateDrawFrame();
     }
 #endif

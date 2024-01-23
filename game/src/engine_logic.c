@@ -22,7 +22,6 @@ static bool _isPlayerClipping = false;
 static Vector3 _lastNonClippedPosition;
 static uint8_t _floorHeight;
 static bool drawHelpText = 1;
-static int framesCounter = 0;
 static int finishScreen = 0;
 static int _currentWallSelection = 8;
 static int _currentItemSelection = 1;
@@ -40,7 +39,6 @@ enum EditorRenderMode currentRenderMode = RenerMode_Textured;
 Texture2D wallTextures[WALL_TEXTURE_COUNT];
 Texture2D itemTextures[ITEM_COUNT];
 Texture2D weaponsTextures[WEAPON_COUNT];
-
 Texture2D spiderEnemy;
 Texture2D destroyerEnemy;
 Texture2D warriorEnemy;
@@ -52,15 +50,96 @@ Texture2D blocker;
 Texture2D lock;
 Model playerMarker;
 Shader alphaDiscard;
-
 Element* items;
 MapBlock* mapBlocks;
 SelectedEntity selectionLocation = { 0 };
+
+typedef struct {
+    char Text[MAX_INPUT_CHARS];
+} ConsoleHistory;
+
+//CONSOLE STUFF
+char name[MAX_INPUT_CHARS + 1] = "\0";
+int letterCount = 0;
+ConsoleHistory _consoleHistory[CONSOLE_HISTORY_SIZE];
+
 
 // Forward declarations
 void InitWalls(bool saveOnComplete);
 void InitElements(bool saveOnComplete);
 void DrawPlayerStartPosition(void);
+
+void HandleConsoleInput(void)
+{   
+        // Get char pressed (unicode character) on the queue
+    int key = GetCharPressed();
+
+    // Check if more characters have been pressed on the same frame
+    while (key > 0)
+    {
+        // NOTE: Only allow keys in range [32..125]
+        if ((key >= 32) && (key <= 125) && (letterCount < MAX_INPUT_CHARS))
+        {
+            name[letterCount] = (char)key;
+            name[letterCount + 1] = '\0'; // Add null terminator at the end of the string.
+            letterCount++;
+        }
+
+        key = GetCharPressed();  // Check next character in the queue
+    }
+
+    if (IsKeyPressed(KEY_BACKSPACE))
+    {
+        letterCount--;
+        if (letterCount < 0) letterCount = 0;
+        name[letterCount] = '\0';
+    }
+
+    else if (IsKeyPressed(KEY_ENTER))
+    {
+        for (size_t i = CONSOLE_HISTORY_SIZE - 1; i > 0; i--)
+        {
+            if (i > 0)
+            {
+                _consoleHistory[i] = _consoleHistory[i - 1];
+            }
+        }
+
+        memcpy(&_consoleHistory[0], &name, sizeof(char) * MAX_INPUT_CHARS);
+        memset(&name, 0, sizeof(char) * MAX_INPUT_CHARS);
+        letterCount = 0;
+        name[letterCount] = '\0';
+    };
+}
+
+void RenderConsole(void)
+{    
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    int inputY = screenHeight - 35;
+
+    Rectangle textBox = {0,  screenHeight / 1.5f, screenWidth, screenHeight / 3 };
+    DrawRectangleRec(textBox, TRANS_RED);
+    DrawRectangleLines((int)textBox.x, (int)textBox.y, (int)textBox.width, (int)textBox.height, WHITE);    
+    DrawText(name, (int)textBox.x + 5, inputY, CONSOLE_FONT_SIZE, WHITE);
+
+    for (size_t i = 0; i < CONSOLE_HISTORY_SIZE; i++)
+    {
+        DrawText(_consoleHistory[i].Text, (int)textBox.x + 5, inputY  - CONSOLE_FONT_SIZE - (i * CONSOLE_FONT_SIZE), CONSOLE_FONT_SIZE, LIGHTGRAY);
+    }
+        
+    if (letterCount < MAX_INPUT_CHARS)
+    {
+        static int framesCounter = 0;
+        framesCounter++;
+        if (framesCounter > 40)
+        {
+            framesCounter = 0;
+        }
+        if (((framesCounter / 20) % 2) == 0) DrawText("_", (int)textBox.x + 8 + MeasureText(name, CONSOLE_FONT_SIZE), inputY, CONSOLE_FONT_SIZE, WHITE);
+    }
+}
+
 
 void UpdateHistory(void)
 {
@@ -637,7 +716,6 @@ void InitGameplayScreen(void)
     playerMarker = LoadModel("assets/PlayerStartPosition.obj");
     lock = LoadTexture("assets/lock.png");
 #endif
-    framesCounter = 0;
     finishScreen = 0;
 
     _levelHistory.history = MemAlloc(sizeof(SFG_Level) * _historySize);
@@ -745,6 +823,10 @@ void ScrollDownEntities(void)
 // Gameplay Screen Update logic
 void UpdateGameplayScreen(void)
 {
+    if (currentEditorMode == Mode_Console)
+    {
+        HandleConsoleInput();
+    }
     if (!_levelReady)
     {
         return;
@@ -755,6 +837,27 @@ void UpdateGameplayScreen(void)
         _focusedMode = !_focusedMode;
         _focusedMode ? EnableCursor() : DisableCursor();
     }
+
+    static enum Mode PreviousMode = Mode_Editor;
+
+    if (IsKeyPressed(KEY_ESCAPE))
+    {
+        if (currentEditorMode == Mode_Console)
+        {
+            currentEditorMode = PreviousMode;
+        }
+    }
+
+    if (IsKeyPressed(KEY_C))
+    {                    
+        if (currentEditorMode != Mode_Console)
+        {
+            PreviousMode = currentEditorMode;
+            currentEditorMode = Mode_Console;
+        }
+    }
+
+    if (currentEditorMode == Mode_Console) { return; }
 
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z))
     {
@@ -934,7 +1037,7 @@ void UpdateGameplayScreen(void)
 
         _2D_Mode = !_2D_Mode;
         if (_2D_Mode)
-        {
+        {   
             was_orignally_focusedmode = _focusedMode;
             orignal_cam_pos = camera.position;
             orignal_cam_target = camera.target;
@@ -1267,6 +1370,13 @@ void DrawGameplayScreen(void)
     DrawElements();    
     EndShaderMode(alphaDiscard);   
     EndMode3D();
+ 
+
+    if (currentEditorMode == Mode_Console)
+    {
+        RenderConsole();
+    }   
+
 
     if (currentEditorMode == Mode_Game)
     {
