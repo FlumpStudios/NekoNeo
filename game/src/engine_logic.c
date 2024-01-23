@@ -668,11 +668,78 @@ void InitGameplayScreen(void)
     _levelReady = true;
 }
 
-void UpdateFloorHeight()
+void UpdateFloorHeight(void)
 {
     auto e = level->mapArray[selectionLocation.mapArrayIndex];
     uint8_t h = GetMapArrayHeightFromIndex(e, e == 0 ? 1 : level->floorHeight);
     _floorHeight = h;
+}
+
+void ScrollUpEntities(void)
+{
+    if (selectionLocation.entityType == Entity_Type_Wall)
+    {
+        bool isDoor = level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK;
+
+        _currentWallSelection--;
+        if ((_currentWallSelection) % 7 == 0)
+        {
+            _currentWallSelection += 7;
+        }
+
+        if (isDoor)
+        {
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection | DOOR_MASK;
+        }
+        else
+        {
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+        }
+
+        RefreshMap(true);
+    }
+    else if (selectionLocation.entityType == Entity_Type_Item)
+    {
+        uint8_t t = _currentItemSelection;
+        uint8_t previousElement = GetPreviousElementType(t);
+        level->elements[selectionLocation.itemIndex].type = previousElement;
+        _currentItemSelection = previousElement;
+        RefreshMap(true);
+    }
+}
+
+void ScrollDownEntities(void)
+{
+    if (selectionLocation.entityType == Entity_Type_Wall)
+    {
+        bool isDoor = level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK;
+
+        _currentWallSelection++;
+        if ((_currentWallSelection - 1) % 7 == 0)
+        {
+            _currentWallSelection -= 7;
+        }
+
+        if (isDoor)
+        {
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection | DOOR_MASK;
+        }
+        else
+        {
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+        }
+
+
+        RefreshMap(true);
+    }
+    else if (selectionLocation.entityType == Entity_Type_Item)
+    {
+        uint8_t t = _currentItemSelection;
+        uint8_t nextElement = GetNextElementType(t);
+        level->elements[selectionLocation.itemIndex].type = nextElement;
+        _currentItemSelection = nextElement;
+        RefreshMap(true);
+    }
 }
 
 // Gameplay Screen Update logic
@@ -816,11 +883,9 @@ void UpdateGameplayScreen(void)
         if (selectionLocation.entityType == Entity_Type_Wall)
         {
             if (level->mapArray[selectionLocation.mapArrayIndex] < DOOR_MASK)
-            {
-                if (level->mapArray[selectionLocation.mapArrayIndex] <= 14)
-                {
-                    level->mapArray[selectionLocation.mapArrayIndex] = (level->mapArray[selectionLocation.mapArrayIndex] - 7) | DOOR_MASK;
-                }
+            {                
+                int index = level->mapArray[selectionLocation.mapArrayIndex];                
+                level->mapArray[selectionLocation.mapArrayIndex] = (index % 7) | DOOR_MASK;
             }
             else
             {
@@ -1031,69 +1096,12 @@ void UpdateGameplayScreen(void)
 
     if (IsKeyPressed(KEY_RIGHT_BRACKET))
     {   
-        if (selectionLocation.entityType == Entity_Type_Wall)
-        {    
-            bool isDoor = level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK;
-
-            _currentWallSelection++;
-            if ((_currentWallSelection - 1) % 7 == 0)
-            {
-                _currentWallSelection -= 7;
-            }
-
-            if (isDoor)
-            {
-                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection | DOOR_MASK;
-            }
-            else
-            {
-                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-            }
-
-
-            RefreshMap(true);
-        }
-        else if (selectionLocation.entityType == Entity_Type_Item)
-        {
-            uint8_t t = _currentItemSelection;
-            uint8_t nextElement = GetNextElementType(t);
-            level->elements[selectionLocation.itemIndex].type = nextElement;
-            _currentItemSelection = nextElement;
-            RefreshMap(true);
-        }
+        ScrollDownEntities();
     }
 
     if (IsKeyPressed(KEY_LEFT_BRACKET))
     {   
-        if (selectionLocation.entityType == Entity_Type_Wall)
-        {
-            bool isDoor = level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK;
-
-            _currentWallSelection--;
-            if ((_currentWallSelection) % 7 == 0)
-            {
-                _currentWallSelection += 7;
-            }
-            
-            if (isDoor)
-            {
-                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection | DOOR_MASK;
-            }
-            else
-            {
-                level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
-            }
-
-            RefreshMap(true);
-        }
-        else if (selectionLocation.entityType == Entity_Type_Item)
-        {                
-            uint8_t t = _currentItemSelection;
-            uint8_t previousElement = GetPreviousElementType(t);
-            level->elements[selectionLocation.itemIndex].type = previousElement;
-            _currentItemSelection = previousElement;
-            RefreshMap(true);
-        }
+        ScrollUpEntities();
     }
 
     if (IsKeyPressed(KEY_R))
@@ -1145,6 +1153,10 @@ void UpdateGameplayScreen(void)
         camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
     }
 
+
+    int wheelMove = GetMouseWheelMove();
+
+
     // Override the default key behavior for E and Q
     if (IsKeyDown(KEY_E))
     {
@@ -1163,6 +1175,14 @@ void UpdateGameplayScreen(void)
     else if (IsKeyDown(KEY_LEFT_CONTROL))
     {
         
+    }
+    else if (wheelMove > 0.5f)
+    {
+        ScrollDownEntities();
+    }
+    else if (wheelMove < -0.5f)
+    {
+        ScrollUpEntities();
     }
     else
     {
