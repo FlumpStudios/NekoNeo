@@ -9,9 +9,7 @@
 
 Font font = { 0 };
 
-
 static void UpdateDrawFrame(void);         
-
 
 //----------------------------------------------------------------------------------
 // Main entry point
@@ -37,6 +35,8 @@ int main(void)
 #endif
 
     // Unload stuff here
+
+    // TODO: Finish unloading properly
     UnloadEngineScreen();
     UnloadFont(font);    
     CloseWindow();

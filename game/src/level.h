@@ -236,14 +236,13 @@ void initLevel(SFG_Level* level)
 }
 
 
-bool SaveLevel(SFG_Level *level)
+bool SaveLevel(SFG_Level *level, char* levelName)
 {
 #ifdef DEBUG
-    const char* saveLocation ="C:/Projects/NekoEngine/levels/level99.HAD";
+    const char* saveLocation ="C:/Projects/NekoEngine/levels/";
 #else
-    const char* saveLocation = "levels/level99.HAD";
+    const char* saveLocation = "levels/";
 #endif
-
     SFG_Level* tempLevel;
     tempLevel = MemAlloc(sizeof(SFG_Level));
     
@@ -252,13 +251,17 @@ bool SaveLevel(SFG_Level *level)
         return false;
     }
 
+    char levelStringBuffer[LEVEL_STRING_MAX_LENGTH];
+
+    snprintf(levelStringBuffer, LEVEL_STRING_MAX_LENGTH, "%s%s.HAD", saveLocation, levelName);
+
     memcpy(tempLevel, level, sizeof(SFG_Level));
     
     InvertArrayWidth(&tempLevel->mapArray, MAP_DIMENSION * MAP_DIMENSION);
     InvertElements(&tempLevel->elements, MAX_ELEMENTS);
     tempLevel->playerStart[0] = MAP_DIMENSION - 1 - tempLevel->playerStart[0];
     
-    FILE* file = fopen(saveLocation, "wb");
+    FILE* file = fopen(levelStringBuffer, "wb");
 
     if (file != NULL) {
         fwrite(tempLevel, sizeof(SFG_Level), 1, file);

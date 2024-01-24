@@ -13,6 +13,8 @@
 #include <string.h>
 #include "raymath.h"
 
+
+static enum Mode PreviousMode = Mode_Editor;
 static bool _levelReady = false;
 static bool _2D_Mode = false;
 static bool _focusedMode = false;
@@ -55,6 +57,7 @@ SelectedEntity selectionLocation = { 0 };
 
 typedef struct {
     char Text[MAX_INPUT_CHARS];
+    char ResponseMessage[MAX_INPUT_CHARS];
 } ConsoleHistory;
 
 //CONSOLE STUFF
@@ -68,34 +71,76 @@ void InitWalls(bool saveOnComplete);
 void InitElements(bool saveOnComplete);
 void DrawPlayerStartPosition(void);
 void RefreshMap(bool updateHistory);
-
+void UnloadEngineScreen(void);
 
 void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
 {
-    if (strcmp(inputString, "load", 4))
+    if (strncmp(inputString, "load", 4) == 0)
     {
         const char* spacePos = strstr(inputString, " ");
 
         if (spacePos != NULL) {
-            // Extract the substring after the space
             const char* path = spacePos + 1;
-
-            // Print the extracted path
-
+        
             if (!SFG_loadLevelFromFile(level, path))
             {
-                responseBuffer = "Error loading file";
+                sprintf(responseBuffer, "Error loading level '%s'", path);
             }
             else
             {       
-                responseBuffer = "level loaded";
+                sprintf(responseBuffer, "level '%s' loaded successfully", path);
                 RefreshMap(true);
             }
+        }        
+    }
+    else if (strncmp(inputString, "save", 4) == 0)
+    {
+        const char* spacePos = strstr(inputString, " ");
 
+        if (spacePos != NULL) {
+            const char* path = spacePos + 1;
+            
+            if (SaveLevel(level, path))
+            {
+                sprintf(responseBuffer, "level '%s' saved successfully", path);
+            }
+            else
+            {
+                sprintf(responseBuffer, "Error saving level '%s'", path);
+            }
         }
-        else {
-            printf("Space character not found in the input string.\n");
-        }
+    }
+    else if (strncmp(inputString, "quit", 4) == 0)
+    {
+        // TODO: Properly release everything        
+        UnloadEngineScreen();
+    }
+    else if (strncmp(inputString, "nuke", 4) == 0)
+    {
+        memset(level, 0, sizeof(SFG_Level));
+        initLevel(level);
+        RefreshMap(true);
+        strcpy(responseBuffer, "Map Nuked!!! Exit console and Ctrl + Z if you're feeling regret");
+    }
+    else if (strncmp(inputString, "close", 5) == 0)
+    {
+        currentEditorMode = PreviousMode;
+        strcpy(responseBuffer, "Console closed");
+    }
+    else if (strncmp(inputString, "test", 4) == 0)
+    {    
+
+#ifdef  DEBUG
+        strcpy(responseBuffer, "Map testing current disabled in debug");
+        return;
+#endif
+
+        const char* exeLocation = "anarch.exe -w -d";        
+        system(exeLocation);
+    }
+    else
+    {
+        sprintf(responseBuffer, "'%s' is not recognsied as a command", inputString);
     }
 }
 
@@ -136,12 +181,10 @@ void HandleConsoleInput(void)
             }
         }
 
-        char responseString[MAX_INPUT_CHARS] = {0};
+        ConsoleQuery(name, &_consoleHistory[0].ResponseMessage, MAX_INPUT_CHARS);
 
+        strcpy(&_consoleHistory[0].Text, &name, sizeof(char) * MAX_INPUT_CHARS);
 
-        ConsoleQuery(name, responseString, MAX_INPUT_CHARS);
-
-        memcpy(&_consoleHistory[0], &name, sizeof(char) * MAX_INPUT_CHARS);
         memset(&name, 0, sizeof(char) * MAX_INPUT_CHARS);
         letterCount = 0;
         name[letterCount] = '\0';
@@ -152,7 +195,8 @@ void RenderConsole(void)
 {    
     int screenWidth = GetScreenWidth();
     int screenHeight = GetScreenHeight();
-    int inputY = screenHeight - 35;
+    int inputY = screenHeight - (CONSOLE_FONT_SIZE * 2);
+    int responseY = screenHeight - (CONSOLE_FONT_SIZE);
 
     Rectangle textBox = {0,  screenHeight / 1.5f, screenWidth, screenHeight / 3 };
     DrawRectangleRec(textBox, TRANS_RED);
@@ -161,7 +205,12 @@ void RenderConsole(void)
 
     for (size_t i = 0; i < CONSOLE_HISTORY_SIZE; i++)
     {
-        DrawText(_consoleHistory[i].Text, (int)textBox.x + 5, inputY  - CONSOLE_FONT_SIZE - (i * CONSOLE_FONT_SIZE), CONSOLE_FONT_SIZE, LIGHTGRAY);
+        auto y = (inputY - (CONSOLE_FONT_SIZE * 2) - (i * CONSOLE_FONT_SIZE * 2 + 5));
+
+        DrawText(_consoleHistory[i].Text, (int)textBox.x + 5, y, CONSOLE_FONT_SIZE, LIGHTGRAY);
+        char buffer[MAX_INPUT_CHARS + 2];
+        sprintf(buffer, "\n%s", _consoleHistory[i].ResponseMessage);
+        DrawText(buffer, (int)textBox.x + 5, y, CONSOLE_FONT_SIZE, BLUE);
     }
         
     if (letterCount < MAX_INPUT_CHARS)
@@ -491,7 +540,7 @@ void InitElements(bool saveOnComplete)
         }
     }
 
-    if (saveOnComplete && SaveLevel(level))
+    if (saveOnComplete && SaveLevel(level, DEBUG_LEVEL))
     {
         TraceLog(LOG_INFO, "Level saved on wall update");
     }
@@ -630,7 +679,7 @@ void InitWalls(bool saveOnComplete)
         col++;
     }
 
-    if (saveOnComplete && SaveLevel(level))
+    if (saveOnComplete && SaveLevel(level, DEBUG_LEVEL))
     {
         TraceLog(LOG_INFO, "Level saved on wall update");
     }
@@ -710,7 +759,7 @@ void InitGameplayScreen(void)
     else {
         memset(level, 0, sizeof(SFG_Level));
 
-        if (!SFG_loadLevelFromFile(level, currentLevel))
+        if (!SFG_loadLevelFromFile(level, DEBUG_LEVEL))
         {
             TraceLog(LOG_ERROR, "Error Loading level from file");
         }
@@ -874,7 +923,7 @@ void UpdateGameplayScreen(void)
         _focusedMode ? EnableCursor() : DisableCursor();
     }
 
-    static enum Mode PreviousMode = Mode_Editor;
+
 
     if (IsKeyPressed(KEY_ESCAPE))
     {
@@ -1051,7 +1100,7 @@ void UpdateGameplayScreen(void)
             level->playerStart[0] = col;
             level->playerStart[1] = row;
 
-            if (SaveLevel(level))
+            if (SaveLevel(level, DEBUG_LEVEL))
             {
                 TraceLog(LOG_INFO, "Level saved on player position update");
             }
@@ -1546,8 +1595,10 @@ void DrawWalls(void)
 void UnloadEngineScreen(void)
 {
     // TODO: Unload GAMEPLAY screen variables here!
+    MemFree(mapBlocks);
+    MemFree(items);
     MemFree(level);
     level = NULL;
-    _blockCount = 0;
+    _blockCount = 0;    
 }
 
