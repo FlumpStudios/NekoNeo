@@ -24,6 +24,11 @@ enum EditorRenderMode {
     RenerMode_CollisionBlock
 };
 
+typedef struct {
+    bool isColliding;
+    Vector3 wallPositions;
+} levelCollisionData;
+
 struct BaseEntity {
     Vector3 position;                
     Texture texture;
@@ -50,7 +55,6 @@ typedef struct {
 typedef struct {
     Camera* camera;
     int arrayCell;
-    bool wallCollision;
     uint8_t floorHeight;
     bool isOutside;
 } DebugInfo;
@@ -61,6 +65,7 @@ typedef struct {
     int mapArrayIndex;
     enum EntityType entityType;
 } SelectedEntity;
+
 
 
 #endif

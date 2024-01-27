@@ -20,8 +20,6 @@ static bool _2D_Mode = false;
 static bool _focusedMode = false;
 static uint32_t _blockCount;
 static uint16_t _elementCount;
-static bool _isPlayerClipping = false;
-static Vector3 _lastNonClippedPosition;
 static uint8_t _floorHeight;
 static bool drawHelpText = 1;
 static int finishScreen = 0;
@@ -54,6 +52,8 @@ Shader alphaDiscard;
 Element* items;
 MapBlock* mapBlocks;
 SelectedEntity selectionLocation = { 0 };
+
+levelCollisionData playerCollisionData;
 
 typedef struct {
     char Text[MAX_INPUT_CHARS];
@@ -143,7 +143,6 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
         sprintf(responseBuffer, "'%s' is not recognsied as a command", inputString);
     }
 }
-
 
 void HandleConsoleInput(void)
 {   
@@ -244,7 +243,6 @@ void UpdateHistory(void)
         assert(_levelHistory.history);
 
         memcpy(_levelHistory.history, buffer, newSize);
-
         MemFree(buffer);
     }
 
@@ -375,33 +373,6 @@ void SetSelectionBlockLocation(void)
     
 }
 
-bool CheckLevelCollision(Vector3 entityPos, Vector3 entitySize)
-{   
-    BoundingBox entityBox = (BoundingBox){(Vector3){ entityPos.x - entitySize.x/2,
-                                                     entityPos.y - entitySize.y/2,
-                                                     entityPos.z - entitySize.z/2 },
-                                          (Vector3){ entityPos.x + entitySize.x/2,
-                                                     entityPos.y + entitySize.y/2,
-                                                     entityPos.z + entitySize.z/2 }};
-
-    for (int i=0; i < _blockCount; i++)
-    {        
-        if (CheckCollisionBoxes(entityBox, mapBlocks[i].boundingBox))
-        {
-            auto h = mapBlocks[i].position.y + (mapBlocks[i].drawHeight / 2);
-            if (camera.position.y > (h  + PLAYER_STAIR_HEIGHT))
-            {
-                return false;
-            };
-         
-            return true;
-        } 
-    }
-    return false;
-}
-
-
-
 void RemoveElement(uint16_t i)
 {
     while (i < MAX_ELEMENTS - 1 && level->elements[i].type > 0)
@@ -507,7 +478,6 @@ void InitElements(bool saveOnComplete)
             Vector3 pos = (Vector3){ x - MAP_DIMENSION / 2,y ,z - MAP_DIMENSION / 2 };
             
             Vector3 elementSize = (Vector3){ 0.95f, 0.95f, 0.95f };
-
 
             BoundingBox elementbox = {0};
 
@@ -903,6 +873,50 @@ void ScrollDownEntities(void)
         _currentItemSelection = nextElement;
         RefreshMap(true);
     }
+}
+
+void PlayerWallCollision(void)
+{
+    bool hascollided = false;
+    for (int i = 0; i < _blockCount; i++)
+    {
+        if (!mapBlocks->hasBlock) { continue; }
+        float h = mapBlocks[i].position.y + (mapBlocks[i].drawHeight / 2);
+        if (camera.position.y > (h + PLAYER_STAIR_HEIGHT))
+        {
+            continue;
+        };
+
+        if (camera.position.x - (PLAYER_SCALE / 2) < mapBlocks[i].position.x + (BLOCK_WIDTH / 2) &&
+            camera.position.x + (PLAYER_SCALE / 2) > mapBlocks[i].position.x - (BLOCK_WIDTH / 2) &&
+            camera.position.z - (PLAYER_SCALE / 2) < mapBlocks[i].position.z + (BLOCK_WIDTH / 2) &&
+            camera.position.z + (PLAYER_SCALE / 2) > mapBlocks[i].position.z - (BLOCK_WIDTH / 2))
+        {
+            float dx = fabs(camera.position.x - mapBlocks[i].position.x);
+            float dy = fabs(camera.position.z - mapBlocks[i].position.z);
+
+            float overlapX = (PLAYER_SCALE + BLOCK_WIDTH) / 2.0f - dx;
+            float overlapY = (PLAYER_SCALE + BLOCK_WIDTH) / 2.0f - dy;
+
+            if (overlapX < overlapY)
+            {
+                if (camera.position.x < mapBlocks[i].position.x)
+                    camera.position.x -= overlapX;
+                else
+                    camera.position.x += overlapX;
+            }
+
+            else
+            {
+                if (camera.position.z < mapBlocks[i].position.z)
+                    camera.position.z -= overlapY;
+                else
+                    camera.position.z += overlapY;
+            }
+            hascollided = true;
+        }
+    }   
+    
 }
 
 // Gameplay Screen Update logic
@@ -1324,16 +1338,9 @@ void UpdateGameplayScreen(void)
         uint8_t h = GetMapArrayHeightFromIndex(e, 0);
         
         camera.position.y = PLAYER_HEIGHT + (BLOCK_HEIGHT * (h));
-
-        if (_isPlayerClipping)
-        {
-           camera.position = _lastNonClippedPosition;
-        }
-        else
-        {
-           _lastNonClippedPosition = camera.position;
-        }
-
+        
+        
+       
     }
     else if (currentEditorMode == Mode_Scene)
     {
@@ -1375,12 +1382,16 @@ void UpdateGameplayScreen(void)
     else
     {
         if (!_focusedMode)
-        {        
+        {
             UpdateCamera(&camera, cameraMode);
         }
-    
+        
+        if(currentEditorMode == Mode_Game)
+        {
+            PlayerWallCollision(); 
+        }
+
     }
-    _isPlayerClipping = CheckLevelCollision(camera.position, (Vector3) { 0.5f, 0.5f, 0.5f });
     UpdateFloorHeight();
 }
 
@@ -1444,18 +1455,13 @@ void DrawGameplayScreen(void)
         }
 
         DrawGrid(MAP_DIMENSION, 1.0f);
-    }
-    
-    if (currentEditorMode == Mode_Editor)
-    {
         DrawPlayerStartPosition();
     }
 
     BeginShaderMode(alphaDiscard);
     DrawElements();    
     EndShaderMode(alphaDiscard);   
-    EndMode3D();
- 
+    EndMode3D(); 
 
     if (currentEditorMode == Mode_Console)
     {
@@ -1471,7 +1477,7 @@ void DrawGameplayScreen(void)
     }
     else if (drawHelpText && currentEditorMode == Mode_Editor)
     {
-        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _isPlayerClipping, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE};
+        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE};
         EUI_DrawDebugData(&d);        
     }
 
@@ -1493,7 +1499,6 @@ void DrawPlayerStartPosition(void)
     int mapArrayindex = GetMapArrayIndex(level->playerStart[0], level->playerStart[1]);
 
     uint8_t stepSize = GetMapArrayHeightFromIndex(level->mapArray[mapArrayindex], level->floorHeight);
-
 
     float h = 0.25f * stepSize;    
     float x = level->playerStart[0] + 0.5;
