@@ -81,6 +81,9 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
     DrawText(TextFormat("- FLoor height: %i", debugInfo->floorHeight), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
 
+    DrawText(TextFormat("- Current Fps: %i", debugInfo->fps), xpos, y, 10, TEXT_COLOUR);
+    y += SPACING;
+
     const char* outsideString = debugInfo->isOutside ? "True" : "False";
     DrawText(TextFormat("- Is level outsude: %s", outsideString), xpos, y, 10, TEXT_COLOUR);
     

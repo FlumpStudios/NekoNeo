@@ -265,6 +265,48 @@ void RefreshMap(bool updateHistory)
     }    
 }
 
+void CheckPlayerBlockCollision(void)
+{
+    for (int i = 0; i < _blockCount; i++)
+    {
+        if (!mapBlocks[i].hasBlock) { continue; }
+        float h = mapBlocks[i].position.y + (mapBlocks[i].drawHeight / 2);
+        if (camera.position.y > (h + PLAYER_STAIR_HEIGHT))
+        {
+            continue;
+        };
+
+        if (camera.position.x - (PLAYER_SCALE / 2) < mapBlocks[i].position.x + (BLOCK_WIDTH / 2) &&
+            camera.position.x + (PLAYER_SCALE / 2) > mapBlocks[i].position.x - (BLOCK_WIDTH / 2) &&
+            camera.position.z - (PLAYER_SCALE / 2) < mapBlocks[i].position.z + (BLOCK_WIDTH / 2) &&
+            camera.position.z + (PLAYER_SCALE / 2) > mapBlocks[i].position.z - (BLOCK_WIDTH / 2))
+        {
+            float dx = fabs(camera.position.x - mapBlocks[i].position.x);
+            float dy = fabs(camera.position.z - mapBlocks[i].position.z);
+
+            float overlapX = (PLAYER_SCALE + BLOCK_WIDTH) / 2.0f - dx;
+            float overlapY = (PLAYER_SCALE + BLOCK_WIDTH) / 2.0f - dy;
+
+            if (overlapX < overlapY)
+            {
+                if (camera.position.x < mapBlocks[i].position.x)
+                    camera.position.x -= overlapX;
+                else
+                    camera.position.x += overlapX;
+            }
+
+            else
+            {
+                if (camera.position.z < mapBlocks[i].position.z)
+                    camera.position.z -= overlapY;
+                else
+                    camera.position.z += overlapY;
+            }
+        }
+    }
+}
+
+
 void SetSelectionBlockLocation(void)
 {
         selectionLocation.itemIndex = -1;
@@ -1103,6 +1145,8 @@ void UpdateGameplayScreen(void)
             CameraRoll(&camera, 0);
             _focusedMode = true;
             camera.fovy = 65.f;
+            PreviousMode = currentEditorMode;
+            currentEditorMode = Mode_Editor;
         }
         else
         {
@@ -1112,6 +1156,7 @@ void UpdateGameplayScreen(void)
             camera.projection = CAMERA_PERSPECTIVE;            
             camera.fovy = 65.f;
             was_cursor_hidden ? HideCursor() : ShowCursor();
+            currentEditorMode = PreviousMode;
         }
     }
 
@@ -1170,8 +1215,7 @@ void UpdateGameplayScreen(void)
             return;
         }
 
-        // HACK: insanely inefficient way to update the blocks, basically regenerating every block. At the moment just want something functiona.
-        // TODO: Do this properly
+        // TODO: Do this properly.
         if (selectionLocation.entityType == Entity_Type_Wall) 
         {
             _currentWallSelection += 7;
@@ -1302,7 +1346,7 @@ void UpdateGameplayScreen(void)
 
     int wheelMove = GetMouseWheelMove();
 
-    // Override the default key behavior for E and Q
+    // Override the default key behavior
     if (IsKeyDown(KEY_E))
     {
         if (currentEditorMode == Mode_Editor)
@@ -1338,43 +1382,7 @@ void UpdateGameplayScreen(void)
         
         if(currentEditorMode == Mode_Game)
         {
-            for (int i = 0; i < _blockCount; i++)
-            {
-                if (!mapBlocks[i].hasBlock) { continue; }
-                float h = mapBlocks[i].position.y + (mapBlocks[i].drawHeight / 2);
-                if (camera.position.y > (h + PLAYER_STAIR_HEIGHT))
-                {
-                    continue;
-                };
-
-                if (camera.position.x - (PLAYER_SCALE / 2) < mapBlocks[i].position.x + (BLOCK_WIDTH / 2) &&
-                    camera.position.x + (PLAYER_SCALE / 2) > mapBlocks[i].position.x - (BLOCK_WIDTH / 2) &&
-                    camera.position.z - (PLAYER_SCALE / 2) < mapBlocks[i].position.z + (BLOCK_WIDTH / 2) &&
-                    camera.position.z + (PLAYER_SCALE / 2) > mapBlocks[i].position.z - (BLOCK_WIDTH / 2))
-                {
-                    float dx = fabs(camera.position.x - mapBlocks[i].position.x);
-                    float dy = fabs(camera.position.z - mapBlocks[i].position.z);
-
-                    float overlapX = (PLAYER_SCALE + BLOCK_WIDTH) / 2.0f - dx;
-                    float overlapY = (PLAYER_SCALE + BLOCK_WIDTH) / 2.0f - dy;
-
-                    if (overlapX < overlapY)
-                    {
-                        if (camera.position.x < mapBlocks[i].position.x)
-                            camera.position.x -= overlapX;
-                        else
-                            camera.position.x += overlapX;
-                    }
-
-                    else
-                    {
-                        if (camera.position.z < mapBlocks[i].position.z)
-                            camera.position.z -= overlapY;
-                        else
-                            camera.position.z += overlapY;
-                    }
-                }
-            }
+            CheckPlayerBlockCollision();
         }
     }    
 }
@@ -1458,9 +1466,11 @@ void DrawGameplayScreen(void)
         float y = GetScreenHeight() - (weaponsTextures[1].height * GUN_SCALE);
         DrawTextureEx(weaponsTextures[1], (Vector2) { x, y}, 0.0f, GUN_SCALE, WHITE);
     }
-    else if (drawHelpText && currentEditorMode == Mode_Editor)
+    
+    
+    if (drawHelpText)
     {
-        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE};
+        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE, GetFPS()};
         EUI_DrawDebugData(&d);        
     }
 

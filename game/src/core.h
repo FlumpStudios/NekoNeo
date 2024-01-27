@@ -56,6 +56,8 @@ typedef struct {
     int arrayCell;
     uint8_t floorHeight;
     bool isOutside;
+    int fps;
+
 } DebugInfo;
 
 typedef struct {
