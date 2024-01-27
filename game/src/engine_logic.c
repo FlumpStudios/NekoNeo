@@ -1340,7 +1340,7 @@ void UpdateGameplayScreen(void)
         {
             for (int i = 0; i < _blockCount; i++)
             {
-                if (!mapBlocks->hasBlock) { continue; }
+                if (!mapBlocks[i].hasBlock) { continue; }
                 float h = mapBlocks[i].position.y + (mapBlocks[i].drawHeight / 2);
                 if (camera.position.y > (h + PLAYER_STAIR_HEIGHT))
                 {
