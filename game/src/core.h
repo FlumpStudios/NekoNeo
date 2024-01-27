@@ -51,7 +51,6 @@ typedef struct {
     float size;
 } Element;
 
-
 typedef struct {
     Camera* camera;
     int arrayCell;
@@ -65,7 +64,5 @@ typedef struct {
     int mapArrayIndex;
     enum EntityType entityType;
 } SelectedEntity;
-
-
 
 #endif

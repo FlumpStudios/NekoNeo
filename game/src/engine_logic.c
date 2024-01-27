@@ -13,7 +13,6 @@
 #include <string.h>
 #include "raymath.h"
 
-
 static enum Mode PreviousMode = Mode_Editor;
 static bool _levelReady = false;
 static bool _2D_Mode = false;
@@ -52,8 +51,6 @@ Shader alphaDiscard;
 Element* items;
 MapBlock* mapBlocks;
 SelectedEntity selectionLocation = { 0 };
-
-levelCollisionData playerCollisionData;
 
 typedef struct {
     char Text[MAX_INPUT_CHARS];
@@ -223,7 +220,6 @@ void RenderConsole(void)
         if (((framesCounter / 20) % 2) == 0) DrawText("_", (int)textBox.x + 8 + MeasureText(name, CONSOLE_FONT_SIZE), inputY, CONSOLE_FONT_SIZE, WHITE);
     }
 }
-
 
 void UpdateHistory(void)
 {
@@ -875,50 +871,6 @@ void ScrollDownEntities(void)
     }
 }
 
-void PlayerWallCollision(void)
-{
-    bool hascollided = false;
-    for (int i = 0; i < _blockCount; i++)
-    {
-        if (!mapBlocks->hasBlock) { continue; }
-        float h = mapBlocks[i].position.y + (mapBlocks[i].drawHeight / 2);
-        if (camera.position.y > (h + PLAYER_STAIR_HEIGHT))
-        {
-            continue;
-        };
-
-        if (camera.position.x - (PLAYER_SCALE / 2) < mapBlocks[i].position.x + (BLOCK_WIDTH / 2) &&
-            camera.position.x + (PLAYER_SCALE / 2) > mapBlocks[i].position.x - (BLOCK_WIDTH / 2) &&
-            camera.position.z - (PLAYER_SCALE / 2) < mapBlocks[i].position.z + (BLOCK_WIDTH / 2) &&
-            camera.position.z + (PLAYER_SCALE / 2) > mapBlocks[i].position.z - (BLOCK_WIDTH / 2))
-        {
-            float dx = fabs(camera.position.x - mapBlocks[i].position.x);
-            float dy = fabs(camera.position.z - mapBlocks[i].position.z);
-
-            float overlapX = (PLAYER_SCALE + BLOCK_WIDTH) / 2.0f - dx;
-            float overlapY = (PLAYER_SCALE + BLOCK_WIDTH) / 2.0f - dy;
-
-            if (overlapX < overlapY)
-            {
-                if (camera.position.x < mapBlocks[i].position.x)
-                    camera.position.x -= overlapX;
-                else
-                    camera.position.x += overlapX;
-            }
-
-            else
-            {
-                if (camera.position.z < mapBlocks[i].position.z)
-                    camera.position.z -= overlapY;
-                else
-                    camera.position.z += overlapY;
-            }
-            hascollided = true;
-        }
-    }   
-    
-}
-
 // Gameplay Screen Update logic
 void UpdateGameplayScreen(void)
 {
@@ -1338,9 +1290,6 @@ void UpdateGameplayScreen(void)
         uint8_t h = GetMapArrayHeightFromIndex(e, 0);
         
         camera.position.y = PLAYER_HEIGHT + (BLOCK_HEIGHT * (h));
-        
-        
-       
     }
     else if (currentEditorMode == Mode_Scene)
     {
@@ -1349,8 +1298,9 @@ void UpdateGameplayScreen(void)
     }
 
 
-    int wheelMove = GetMouseWheelMove();
+    UpdateFloorHeight();
 
+    int wheelMove = GetMouseWheelMove();
 
     // Override the default key behavior for E and Q
     if (IsKeyDown(KEY_E))
@@ -1388,13 +1338,46 @@ void UpdateGameplayScreen(void)
         
         if(currentEditorMode == Mode_Game)
         {
-            PlayerWallCollision(); 
+            for (int i = 0; i < _blockCount; i++)
+            {
+                if (!mapBlocks->hasBlock) { continue; }
+                float h = mapBlocks[i].position.y + (mapBlocks[i].drawHeight / 2);
+                if (camera.position.y > (h + PLAYER_STAIR_HEIGHT))
+                {
+                    continue;
+                };
+
+                if (camera.position.x - (PLAYER_SCALE / 2) < mapBlocks[i].position.x + (BLOCK_WIDTH / 2) &&
+                    camera.position.x + (PLAYER_SCALE / 2) > mapBlocks[i].position.x - (BLOCK_WIDTH / 2) &&
+                    camera.position.z - (PLAYER_SCALE / 2) < mapBlocks[i].position.z + (BLOCK_WIDTH / 2) &&
+                    camera.position.z + (PLAYER_SCALE / 2) > mapBlocks[i].position.z - (BLOCK_WIDTH / 2))
+                {
+                    float dx = fabs(camera.position.x - mapBlocks[i].position.x);
+                    float dy = fabs(camera.position.z - mapBlocks[i].position.z);
+
+                    float overlapX = (PLAYER_SCALE + BLOCK_WIDTH) / 2.0f - dx;
+                    float overlapY = (PLAYER_SCALE + BLOCK_WIDTH) / 2.0f - dy;
+
+                    if (overlapX < overlapY)
+                    {
+                        if (camera.position.x < mapBlocks[i].position.x)
+                            camera.position.x -= overlapX;
+                        else
+                            camera.position.x += overlapX;
+                    }
+
+                    else
+                    {
+                        if (camera.position.z < mapBlocks[i].position.z)
+                            camera.position.z -= overlapY;
+                        else
+                            camera.position.z += overlapY;
+                    }
+                }
+            }
         }
-
-    }
-    UpdateFloorHeight();
+    }    
 }
-
 
 // Gameplay Screen Draw logic
 void DrawGameplayScreen(void)
