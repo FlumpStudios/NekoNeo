@@ -179,7 +179,7 @@ void HandleConsoleInput(void)
 
         ConsoleQuery(name, &_consoleHistory[0].ResponseMessage, MAX_INPUT_CHARS);
 
-        strcpy(&_consoleHistory[0].Text, &name, sizeof(char) * MAX_INPUT_CHARS);
+        strcpy(&_consoleHistory[0].Text, &name);
 
         memset(&name, 0, sizeof(char) * MAX_INPUT_CHARS);
         letterCount = 0;
@@ -359,10 +359,9 @@ void SetSelectionBlockLocation(void)
             }
         }
 
-        // Return if nothing hit
         if (foundEntityType == Entity_Type_None)
         {
-            // DO NOTHING AT TH MOMENT
+            // DO NOTHING AT THE MOMENT
         }
         else if (foundEntityType == Entity_Type_Wall || foundEntityType == Entity_Type_Free)
         {
@@ -1186,11 +1185,8 @@ void UpdateGameplayScreen(void)
     }
 
     if (IsKeyPressed(KEY_H))
-    {
-        if(currentEditorMode == Mode_Editor)
-        { 
-            drawHelpText = !drawHelpText;
-        }
+    {         
+        drawHelpText = !drawHelpText;        
     }
 
     if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_PERIOD))

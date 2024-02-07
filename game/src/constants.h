@@ -28,7 +28,7 @@
 #define BLOCK_HEIGHT 0.25f
 #define BLOCK_WIDTH 1.0f
 #define DEBUG_LEVEL "level99"
-#define WALL_TEXTURE_COUNT 15
+#define WALL_TEXTURE_COUNT 16
 #define ITEM_COUNT 13
 #define WEAPON_COUNT 5
 #define MAP_ARRAY_SIZE 4096
