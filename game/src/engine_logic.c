@@ -124,6 +124,11 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
         currentEditorMode = PreviousMode;
         strcpy(responseBuffer, "Console closed");
     }
+    else if (strncmp(inputString, "cls", 4) == 0)
+    {
+        memset(_consoleHistory, 0, sizeof(ConsoleHistory) * CONSOLE_HISTORY_SIZE);
+        memset(name, 0, MAX_INPUT_CHARS);
+    }
     else if (strncmp(inputString, "test", 4) == 0)
     {    
 
@@ -178,7 +183,6 @@ void HandleConsoleInput(void)
         }
 
         ConsoleQuery(name, &_consoleHistory[0].ResponseMessage, MAX_INPUT_CHARS);
-
         strcpy(&_consoleHistory[0].Text, &name);
 
         memset(&name, 0, sizeof(char) * MAX_INPUT_CHARS);
