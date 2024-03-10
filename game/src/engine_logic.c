@@ -115,6 +115,7 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
     else if (strncmp(inputString, "nuke", 4) == 0)
     {
         memset(level, 0, sizeof(SFG_Level));
+        SFG_loadLevelFromFile(level, BASE_LEVEL_NAME);
         initLevel(level);
         RefreshMap(true);
         strcpy(responseBuffer, "Map Nuked!!! Exit console and Ctrl + Z if you're feeling regret");
@@ -147,22 +148,20 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
 }
 
 void HandleConsoleInput(void)
-{   
-        // Get char pressed (unicode character) on the queue
+{       
     int key = GetCharPressed();
 
-    // Check if more characters have been pressed on the same frame
     while (key > 0)
     {
         // NOTE: Only allow keys in range [32..125]
         if ((key >= 32) && (key <= 125) && (letterCount < MAX_INPUT_CHARS))
         {
             name[letterCount] = (char)key;
-            name[letterCount + 1] = '\0'; // Add null terminator at the end of the string.
+            name[letterCount + 1] = '\0';
             letterCount++;
         }
 
-        key = GetCharPressed();  // Check next character in the queue
+        key = GetCharPressed();
     }
 
     if (IsKeyPressed(KEY_BACKSPACE))
@@ -661,7 +660,6 @@ void InitWalls(bool saveOnComplete)
         }
         else
         {
-            // TODO: Eww, need to remove duplicated stuff
             float x = (1.0f * col) - MAP_DIMENSION / 2;
             float y = 1.0f;
             float z = (1.0f * row) - MAP_DIMENSION / 2;
@@ -718,7 +716,13 @@ void InitGameplayScreen(void)
 
         if (!SFG_loadLevelFromFile(level, DEBUG_LEVEL))
         {
-            TraceLog(LOG_ERROR, "Error Loading level from file");
+            TraceLog(LOG_ERROR, "Error Loading debug level from file");
+
+            if (!SFG_loadLevelFromFile(level, BASE_LEVEL_NAME))
+            {
+                TraceLog(LOG_ERROR, "Error Loading base level from file");
+            }
+
             initLevel(level);
         }
         else
@@ -1219,10 +1223,10 @@ void UpdateGameplayScreen(void)
         if (selectionLocation.entityType == Entity_Type_Wall) 
         {
             _currentWallSelection += 7;
-            if (_currentWallSelection >= 64)
+            if (_currentWallSelection >= TILE_DICTIONARY_SIZE)
             {
-                _currentWallSelection -= 63;
-                _currentWallSelection += 7;
+                _currentWallSelection -= (TILE_DICTIONARY_SIZE -1);
+                _currentWallSelection += 8;
             }
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
             RefreshMap(true);
@@ -1258,8 +1262,8 @@ void UpdateGameplayScreen(void)
             _currentWallSelection -= 7;
             if (_currentWallSelection <= 7)
             {
-                _currentWallSelection += 63;
-                _currentWallSelection -= 7;
+                _currentWallSelection += (TILE_DICTIONARY_SIZE - 1);
+                _currentWallSelection -= 8;
             }
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
             RefreshMap(true);

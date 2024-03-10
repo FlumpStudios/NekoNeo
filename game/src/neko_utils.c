@@ -10,99 +10,30 @@ uint8_t GetTetureIndex(uint8_t i)
     switch (i)
     {
     case 1 | DOOR_MASK:
-        r = 0;
-        break;
+        return 0;
+        
     case 2 | DOOR_MASK:
-        r = 1;
-        break;
+        return 1;
+        
     case 3 | DOOR_MASK:
-        r = 2;
-        break;
+        return 2;
+
     case 4 | DOOR_MASK:
-        r = 3;
-        break;
+        return 3;
+
     case 5 | DOOR_MASK:
-        r = 4;
-        break;
+        return 4;
+
     case 6 | DOOR_MASK:
-        r = 5;
-        break;
+        return 5;
+
     case 7 | DOOR_MASK:
-        r = 6;
-        break;
-    case 8:
-    case 8 + 7:
-    case 8 + 14:
-    case 8 + 21:
-    case 8 + 28:
-    case 8 + 35:
-    case 8 + 42:
-    case 8 + 49:
-        r = 0;
-        break;
-    case 9:
-    case 9 + 7:
-    case 9 + 14:
-    case 9 + 21:
-    case 9 + 28:
-    case 9 + 35:
-    case 9 + 42:
-    case 9 + 49:
-        r = 1;
-        break;
-    case 10:
-    case 10 + 7:
-    case 10 + 14:
-    case 10 + 21:
-    case 10 + 28:
-    case 10 + 35:
-    case 10 + 42:
-    case 10 + 49:
-        r = 2;
-        break;
-    case 11:
-    case 11 + 7:
-    case 11 + 14:
-    case 11 + 21:
-    case 11 + 28:
-    case 11 + 35:
-    case 11 + 42:
-    case 11 + 49:
-        r = 3;
-        break;
-    case 12:
-    case 12 + 7:
-    case 12 + 14:
-    case 12 + 21:
-    case 12 + 28:
-    case 12 + 35:
-    case 12 + 42:
-    case 12 + 49:
-        r = 4;
-        break;
-    case 13:
-    case 13 + 7:
-    case 13 + 14:
-    case 13 + 21:
-    case 13 + 28:
-    case 13 + 35:
-    case 13 + 42:
-    case 13 + 49:
-        r = 5;
-        break;
-    case 14:
-    case 14 + 7:
-    case 14 + 14:
-    case 14 + 21:
-    case 14 + 28:
-    case 14 + 35:
-    case 14 + 42:
-    case 14 + 49:
-        r = 6;
-        break;
+        return 6;        
     }
 
-    return r;
+
+    uint8_t offset = i - 8;
+    return (offset % 7);
 }
 
 void GetEntityPositionFromPosition(Vector3 location, uint8_t* col, uint8_t* row)
@@ -129,16 +60,19 @@ int GetMapIndeFromPosition(Vector3 location)
 uint8_t GetMapArrayHeightFromIndex(uint8_t index, uint8_t baseValue)
 {
     // Empty space
-    if (index == 0) { return 0; }
-    if (index >= 15 && index < 22) { return 1; }
-    if (index >= 22 && index < 29) { return 2; }
-    if (index >= 29 && index < 36) { return 3; }
-    if (index >= 36 && index < 43) { return 4; }
-    if (index >= 43 && index < 50) { return 5; }
-    if (index >= 50 && index < 57) { return 6; }
-    if (index >= 57 && index < 64) { return 7; }
-        
-    return baseValue;
+    if (index == 0) 
+    { 
+        return 0; 
+    }
+    
+    // Doors and full walls
+    if(index < 15 || index > DOOR_MASK)
+    {
+        return baseValue;
+    }
+
+    // Platforms
+    return (index - 15) / 7 + 1;
 }
 
 Vector3 NormalizeVector(Vector3 v) {

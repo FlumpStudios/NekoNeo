@@ -2,7 +2,6 @@
 #ifndef _SFG_LEVELS_H
 #define _SFG_LEVELS_H
 #define SFG_MAP_SIZE 64
-#define SFG_TILE_DICTIONARY_SIZE 64
 #include "constants.h"
 #include "neko_utils.h"
 #include <stdint.h>
@@ -26,7 +25,7 @@ typedef uint16_t SFG_TileDefinition;
 #define SFG_TILE_CEILING_MAX_HEIGHT 31
 #define SFG_TILE_TEXTURE_TRANSPARENT 7
 
-typedef SFG_TileDefinition SFG_TileDictionary[SFG_TILE_DICTIONARY_SIZE];
+typedef SFG_TileDefinition SFG_TileDictionary[TILE_DICTIONARY_SIZE];
 
 /// helper macros for SFG_TileDefinition
 #define SFG_TD(floorH, ceilH, floorT, ceilT)\
