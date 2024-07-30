@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "rl_utils.h"
+#include <stdint.h>
+#include <stdlib.h>
 #include "core.h"
 #include "neko_utils.h"
 #include "constants.h"
@@ -125,10 +127,45 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
         currentEditorMode = PreviousMode;
         strcpy(responseBuffer, "Console closed");
     }
-    else if (strncmp(inputString, "cls", 4) == 0)
+    else if (strncmp(inputString, "cls", 3) == 0)
     {
         memset(_consoleHistory, 0, sizeof(ConsoleHistory) * CONSOLE_HISTORY_SIZE);
         memset(name, 0, MAX_INPUT_CHARS);
+    }
+    else if (strncmp(inputString, "stepSize", 8) == 0 || strncmp(inputString, "stepsize", 8) == 0)
+    {        
+
+        if (strnlen(inputString, 100) < 10)
+        {            
+            strcpy(responseBuffer, "Please enter a value for step size");
+        }
+        else
+        {
+            char* endptr = NULL;
+            auto size = strtol(&inputString[9], &endptr, 10);
+
+            if (*endptr != '\0') {
+                strcpy(responseBuffer, "Could not read step size value");
+            }
+            else if (size > MAX_STEP_SIZE)
+            {
+                char toBigbuffer[40];
+                const char* maxSizeResponse = sprintf(toBigbuffer, "Step size must be equel to or below %i", MAX_STEP_SIZE);
+                strcpy(responseBuffer, toBigbuffer);
+            }
+            else if (size < 1)
+            {
+                char toBigbuffer[40];
+                const char* maxSizeResponse = sprintf(toBigbuffer, "Step size cannon be below 1");
+                strcpy(responseBuffer, toBigbuffer);
+            }
+            else {
+                level->stepSize = size;
+                RefreshMap(true);
+                strcpy(responseBuffer, "Step size updated");
+            }
+            
+        }        
     }
     else if (strncmp(inputString, "test", 4) == 0)
     {    
@@ -308,7 +345,6 @@ void CheckPlayerBlockCollision(void)
         }
     }
 }
-
 
 void SetSelectionBlockLocation(void)
 {
@@ -507,7 +543,7 @@ void InitElements(bool saveOnComplete)
 
             int mapArrayindex = GetMapArrayIndex(level->elements[i].coords[0], level->elements[i].coords[1]);
 
-            uint8_t stepSize = GetMapArrayHeightFromIndex(level->mapArray[mapArrayindex], level->floorHeight);
+            uint8_t stepSize = GetMapArrayHeightFromIndex(level->mapArray[mapArrayindex], level->floorHeight, level->stepSize);
 
             Texture t = GetTextureFromElementType(level->elements[i].type);
             float h = 0.25f * stepSize;
@@ -588,7 +624,7 @@ void InitWalls(bool saveOnComplete)
         if (level->mapArray[i] > 0)
         {
             uint8_t v = level->mapArray[i];
-            uint8_t height = GetMapArrayHeightFromIndex(level->mapArray[i], level->floorHeight);
+            uint8_t height = GetMapArrayHeightFromIndex(level->mapArray[i], level->floorHeight, level->stepSize);            
             uint8_t textureIndexRef = GetTetureIndex(level->mapArray[i]);
             uint8_t textureIndex = level->textureIndices[textureIndexRef];
 
@@ -616,7 +652,7 @@ void InitWalls(bool saveOnComplete)
                 mapBlocks[_blockCount].isDoor = isDoor;
                 if (isDoor)
                 {
-                    if (k < 4)
+                    if (k == level->doorLevitation * 4)
                     {
                         mapBlocks[_blockCount].position = (Vector3){ x + 0.5f, (k * BLOCK_HEIGHT) + drawHeight / 2, z + 0.5f };
                         mapBlocks[_blockCount].texture = wallTextures[level->doorTextureIndex];
@@ -849,7 +885,7 @@ void InitGameplayScreen(void)
 void UpdateFloorHeight(void)
 {
     auto e = level->mapArray[selectionLocation.mapArrayIndex];
-    uint8_t h = GetMapArrayHeightFromIndex(e, e == 0 ? 1 : level->floorHeight);
+    uint8_t h = GetMapArrayHeightFromIndex(e, e == 0 ? 1 : level->floorHeight, level->stepSize);
     _floorHeight = h;
 }
 
@@ -1216,6 +1252,15 @@ void UpdateGameplayScreen(void)
     {   
         if (level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK)
         {
+            level->doorLevitation += 1;
+
+            if (level->doorLevitation >= level->floorHeight / 4)
+            {
+                level->doorLevitation = 0;
+            }
+
+            RefreshMap(true);
+            
             return;
         }
 
@@ -1225,7 +1270,7 @@ void UpdateGameplayScreen(void)
             _currentWallSelection += 7;
             if (_currentWallSelection >= TILE_DICTIONARY_SIZE)
             {
-                _currentWallSelection -= (TILE_DICTIONARY_SIZE -1);
+                _currentWallSelection -= (TILE_DICTIONARY_SIZE);
                 _currentWallSelection += 8;
             }
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
@@ -1254,6 +1299,14 @@ void UpdateGameplayScreen(void)
 
         if (level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK)
         {
+            if (level->doorLevitation == 0)
+            {
+                level->doorLevitation = level->floorHeight / 4;
+            }
+            level->doorLevitation -= 1;
+
+            RefreshMap(true);
+
             return;
         }
         
@@ -1262,7 +1315,7 @@ void UpdateGameplayScreen(void)
             _currentWallSelection -= 7;
             if (_currentWallSelection <= 7)
             {
-                _currentWallSelection += (TILE_DICTIONARY_SIZE - 1);
+                _currentWallSelection += (TILE_DICTIONARY_SIZE);
                 _currentWallSelection -= 8;
             }
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
@@ -1335,7 +1388,7 @@ void UpdateGameplayScreen(void)
 
         int arrayPos = GetMapIndeFromPosition(camera.position);
         auto e = level->mapArray[arrayPos];
-        uint8_t h = GetMapArrayHeightFromIndex(e, 0);
+        uint8_t h = GetMapArrayHeightFromIndex(e, 0, level->stepSize);
         
         camera.position.y = PLAYER_HEIGHT + (BLOCK_HEIGHT * (h));
     }
@@ -1495,7 +1548,7 @@ void DrawPlayerStartPosition(void)
 
     int mapArrayindex = GetMapArrayIndex(level->playerStart[0], level->playerStart[1]);
 
-    uint8_t stepSize = GetMapArrayHeightFromIndex(level->mapArray[mapArrayindex], level->floorHeight);
+    uint8_t stepSize = GetMapArrayHeightFromIndex(level->mapArray[mapArrayindex], level->floorHeight, level->stepSize);
 
     float h = 0.25f * stepSize;    
     float x = level->playerStart[0] + 0.5;

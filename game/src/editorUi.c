@@ -21,6 +21,9 @@ static void DrawControls()
     DrawText("- Cycle wall height: comma(,) and period (.)", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
+    DrawText("- Cycle level door height: comma(,) and period (.) when highlighting door column", 15, y, 10, TEXT_COLOUR);
+    y += SPACING;
+
     DrawText("- Cycle level height: Shift + comma(,)/period (.)", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
@@ -50,10 +53,11 @@ static void DrawControls()
 
     DrawText("- Overhead Perspective: Tab", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
+
  
     DrawText("- Show/Hide help and debug info: H", 15, y, 10, TEXT_COLOUR);
-    DrawRectangle(5, Y_START - 10, 330, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));
-    DrawRectangleLines(Y_START - 10, 5, 330, y + 10, RECTANGLE_EDGE_COLOUR);
+    DrawRectangle(5, Y_START - 10, 430, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));
+    DrawRectangleLines(Y_START - 10, 5, 430, y + 10, RECTANGLE_EDGE_COLOUR);
 }
 
 

@@ -57,7 +57,16 @@ int GetMapIndeFromPosition(Vector3 location)
     return index;
 }
 
-uint8_t GetMapArrayHeightFromIndex(uint8_t index, uint8_t baseValue)
+bool IsFullWall(uint8_t index)
+{
+    if (index == 8)
+    {
+        return true;
+    }
+    return false;
+}
+
+uint8_t GetMapArrayHeightFromIndex(uint8_t index, uint8_t baseValue, uint8_t stepSize)
 {
     // Empty space
     if (index == 0) 
@@ -72,7 +81,7 @@ uint8_t GetMapArrayHeightFromIndex(uint8_t index, uint8_t baseValue)
     }
 
     // Platforms
-    return (index - 15) / 7 + 1;
+    return ((index - 15) / 7 + 1) * stepSize;
 }
 
 Vector3 NormalizeVector(Vector3 v) {

@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 
-
+ 
 /**
   Defines a single game map tile. The format is following:
 
@@ -139,6 +139,9 @@ typedef struct
     SFG_LevelElement elements[SFG_MAX_LEVEL_ELEMENTS];
     uint8_t ceilHeight;
     uint8_t floorHeight;
+    uint8_t doorLevitation;
+    uint8_t stepSize;
+
 } SFG_Level;
 
 
@@ -219,6 +222,8 @@ uint8_t SFG_loadLevelFromFile(SFG_Level* buffer, const char* level)
 
 void initLevel(SFG_Level* level)
 {
+    level->stepSize = 1;
+    level->doorLevitation = 0;
     level->ceilHeight = 10;
     level->floorHeight = 10;
     level->ceilingColor = 5;
