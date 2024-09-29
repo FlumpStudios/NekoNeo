@@ -175,7 +175,7 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
         return;
 #endif
 
-        const char* exeLocation = "anarch.exe -w -d";        
+        const char* exeLocation = "Ruyn.exe -w -d";        
         system(exeLocation);
     }
     else
