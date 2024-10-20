@@ -264,7 +264,50 @@ bool SaveLevel(SFG_Level *level, char* levelName)
     InvertArrayWidth(&tempLevel->mapArray, MAP_DIMENSION * MAP_DIMENSION);
     InvertElements(&tempLevel->elements, MAX_ELEMENTS);
     tempLevel->playerStart[0] = MAP_DIMENSION - 1 - tempLevel->playerStart[0];
-    
+
+   
+    // UPDATE THE TILE DICT
+
+    tempLevel->tileDictionary[0] = SFG_TD(0, tempLevel->ceilHeight, 0, 0); // 0
+
+    typedef uint8_t byte;
+    typedef uint16_t ushort;
+
+              // Doors 
+    tempLevel->tileDictionary[1] = SFG_TD(((tempLevel->doorLevitation * 4) + 4), tempLevel->ceilHeight > 30 ? 31 : 0, 0, 0); // 1
+    tempLevel->tileDictionary[2] = SFG_TD(((tempLevel->doorLevitation * 4) + 4), tempLevel->ceilHeight > 30 ? 31 : 0, 1, 1); // 2
+    tempLevel->tileDictionary[3] = SFG_TD(((tempLevel->doorLevitation * 4) + 4), tempLevel->ceilHeight > 30 ? 31 : 0, 2, 2); // 3 
+    tempLevel->tileDictionary[4] = SFG_TD(((tempLevel->doorLevitation * 4) + 4), tempLevel->ceilHeight > 30 ? 31 : 0, 3, 3); // 4
+    tempLevel->tileDictionary[5] = SFG_TD(((tempLevel->doorLevitation * 4) + 4), tempLevel->ceilHeight > 30 ? 31 : 0, 4, 4); // 5
+    tempLevel->tileDictionary[6] = SFG_TD(((tempLevel->doorLevitation * 4) + 4), tempLevel->ceilHeight > 30 ? 31 : 0, 5, 5); // 6
+    tempLevel->tileDictionary[7] = SFG_TD(((tempLevel->doorLevitation * 4) + 4), tempLevel->ceilHeight > 30 ? 31 : 0, 6, 6); // 7
+
+    // Walls
+    tempLevel->tileDictionary[8] = SFG_TD(tempLevel->floorHeight, tempLevel->ceilHeight, 0, 0); // 8
+    tempLevel->tileDictionary[9] = SFG_TD(tempLevel->floorHeight, tempLevel->ceilHeight, 1, 1); // 9
+    tempLevel->tileDictionary[10] = SFG_TD(tempLevel->floorHeight, tempLevel->ceilHeight, 2, 2); // 10
+    tempLevel->tileDictionary[11] = SFG_TD(tempLevel->floorHeight, tempLevel->ceilHeight, 3, 3); // 11
+    tempLevel->tileDictionary[12] = SFG_TD(tempLevel->floorHeight, tempLevel->ceilHeight, 4, 4); // 12
+    tempLevel->tileDictionary[13] = SFG_TD(tempLevel->floorHeight, tempLevel->ceilHeight, 5, 5); // 13
+    tempLevel->tileDictionary[14] = SFG_TD(tempLevel->floorHeight, tempLevel->ceilHeight, 6, 6); // 14 
+
+    ushort textureIndex = 0;
+    ushort heightIndex = tempLevel->stepSize;
+
+    // Platforms
+    for (int i = 15; i < 64; i++)
+    {
+        tempLevel->tileDictionary[i] = SFG_TD(heightIndex, tempLevel->ceilHeight < 31 ? (tempLevel->ceilHeight - heightIndex) : 31, (textureIndex), (textureIndex)); // 15
+
+        textureIndex++;
+        if (textureIndex >= 7)
+        {
+            textureIndex = 0;
+            heightIndex += tempLevel->stepSize;
+        }
+    }
+
+
     FILE* file = fopen(levelStringBuffer, "wb");
 
     if (file != NULL) {
