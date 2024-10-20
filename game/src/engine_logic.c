@@ -15,14 +15,14 @@
 #include <string.h>
 #include "raymath.h"
 
-static enum Mode PreviousMode = Mode_Editor;
+static Mode PreviousMode = Mode_Editor;
 static bool _levelReady = false;
 static bool _2D_Mode = false;
 static bool _focusedMode = false;
 static uint32_t _blockCount;
 static uint16_t _elementCount;
 static uint8_t _floorHeight;
-static bool drawHelpText = 1;
+static UiMode drawHelpText = 1;
 static int finishScreen = 0;
 static int _currentWallSelection = 8;
 static int _currentItemSelection = 1;
@@ -33,8 +33,8 @@ static Camera3D camera = { 0 };
 static LevelHistory _levelHistory;
 static size_t _historySize = INITIAL_HISTORY_BUFFER_SIZE;
 
-enum Mode currentEditorMode = Mode_Editor;
-enum EditorRenderMode currentRenderMode = RenerMode_Textured;
+Mode currentEditorMode = Mode_Editor;
+EditorRenderMode currentRenderMode = RenerMode_Textured;
 
 Texture2D wallTextures[WALL_TEXTURE_COUNT];
 Texture2D itemTextures[ITEM_COUNT];
@@ -114,6 +114,10 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
         // TODO: Properly release everything        
         UnloadEngineScreen();
     }
+    else if (strncmp(inputString, "help", 4) == 0)
+    {
+        strcpy(responseBuffer, "\"Close\" - Close console; \"load\" + level name - load level; \"save\" + level name - save level;\n \"nuke\" - Clear level; \"quit\" - quit editor; \"stepSize\" + int param - set the global step size");
+    }
     else if (strncmp(inputString, "nuke", 4) == 0)
     {
         memset(level, 0, sizeof(SFG_Level));
@@ -142,6 +146,7 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
         else
         {
             char* endptr = NULL;
+
             auto size = strtol(&inputString[9], &endptr, 10);
 
             if (*endptr != '\0') {
@@ -246,7 +251,7 @@ void RenderConsole(void)
         DrawText(_consoleHistory[i].Text, (int)textBox.x + 5, y, CONSOLE_FONT_SIZE, LIGHTGRAY);
         char buffer[MAX_INPUT_CHARS + 2];
         sprintf(buffer, "\n%s", _consoleHistory[i].ResponseMessage);
-        DrawText(buffer, (int)textBox.x + 5, y, CONSOLE_FONT_SIZE, BLUE);
+        DrawText(buffer, (int)textBox.x + 5, y, CONSOLE_FONT_SIZE, YELLOW);
     }
         
     if (letterCount < MAX_INPUT_CHARS)
@@ -984,7 +989,7 @@ void UpdateGameplayScreen(void)
         }
     }
 
-    if (IsKeyPressed(KEY_C))
+    if (IsKeyPressed(KEY_TAB))
     {                    
         if (currentEditorMode != Mode_Console)
         {
@@ -1164,7 +1169,7 @@ void UpdateGameplayScreen(void)
     }
 
 
-    if (IsKeyPressed(KEY_TAB))
+    if (IsKeyPressed(KEY_M))
     {
         static bool was_orignally_focusedmode;        
         static Vector3 orignal_cam_pos;
@@ -1230,7 +1235,11 @@ void UpdateGameplayScreen(void)
 
     if (IsKeyPressed(KEY_H))
     {         
-        drawHelpText = !drawHelpText;        
+        drawHelpText++;
+        if (drawHelpText > DebugAndHelp)
+        {
+            drawHelpText = 0;
+        }
     }
 
     if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_PERIOD))
@@ -1523,13 +1532,13 @@ void DrawGameplayScreen(void)
         float y = GetScreenHeight() - (weaponsTextures[1].height * GUN_SCALE);
         DrawTextureEx(weaponsTextures[1], (Vector2) { x, y}, 0.0f, GUN_SCALE, WHITE);
     }
-    
-    
-    if (drawHelpText)
-    {
+
+    if (level)
+    {    
         DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE, GetFPS()};
-        EUI_DrawDebugData(&d);        
+        EUI_DrawDebugData(&d, drawHelpText);
     }
+    
 
     if (!_focusedMode)
     {    

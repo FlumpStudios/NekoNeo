@@ -21,13 +21,13 @@ static void DrawControls()
     DrawText("- Cycle wall height: comma(,) and period (.)", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText("- Cycle level door height: comma(,) and period (.) when highlighting door column", 15, y, 10, TEXT_COLOUR);
+    DrawText("- Cycle level door height: comma(,) and period(.) when highlighting door column", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText("- Cycle level height: Shift + comma(,)/period (.)", 15, y, 10, TEXT_COLOUR);
+    DrawText("- Cycle level height: Shift + comma(,)/period(.)", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText("- Cycle wall texture / cycle items : [ and ]", 15, y, 10, TEXT_COLOUR);
+    DrawText("- Cycle wall texture / cycle items : \"[\" and \"]\" or mouse wheel", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
     DrawText("- Set selected wall as door : T", 15, y, 10, TEXT_COLOUR);
@@ -51,8 +51,12 @@ static void DrawControls()
     DrawText("- Focus mode (lock cam and reveal cursor): Middle mouse", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText("- Overhead Perspective: Tab", 15, y, 10, TEXT_COLOUR);
+    DrawText("- Overhead Perspective (Map view): M", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
+
+    DrawText("- open Console: Tab", 15, y, 10, TEXT_COLOUR);
+    y += SPACING;
+
 
  
     DrawText("- Show/Hide help and debug info: H", 15, y, 10, TEXT_COLOUR);
@@ -89,16 +93,23 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
     y += SPACING;
 
     const char* outsideString = debugInfo->isOutside ? "True" : "False";
-    DrawText(TextFormat("- Is level outsude: %s", outsideString), xpos, y, 10, TEXT_COLOUR);
+    DrawText(TextFormat("- Is level outside: %s", outsideString), xpos, y, 10, TEXT_COLOUR);
     
-
     DrawRectangle(xpos -10, Y_START - 10, 195, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));
     DrawRectangleLines(xpos - 10, Y_START - 10, 195, y + 10, RECTANGLE_EDGE_COLOUR);
 }
 
 
-void EUI_DrawDebugData(DebugInfo* debugInfo)
+void EUI_DrawDebugData(DebugInfo* debugInfo, UiMode mode)
 {
-    DrawControls();
-    DrawCameraInfo(debugInfo);
+    if (mode == Off) { return;}
+
+    if (mode > Off)
+    {
+        DrawCameraInfo(debugInfo);
+        if (mode > DebugOnly)
+        {        
+            DrawControls();
+        }
+    }
 }

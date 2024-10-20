@@ -11,18 +11,24 @@ enum EntityType {
     Entity_Type_Free
 };
 
-enum Mode {
+typedef enum Mode {
   Mode_Editor,
   Mode_Game,
   Mode_Scene,
   Mode_Console
-};
+} Mode;
 
-enum EditorRenderMode {
+typedef enum UiMode {
+    Off,
+    DebugOnly,
+    DebugAndHelp
+} UiMode;
+
+typedef enum EditorRenderMode {
     RenerMode_Textured,
     RenerMode_Colored,
     RenerMode_CollisionBlock
-};
+} EditorRenderMode;
 
 typedef struct {
     bool isColliding;
