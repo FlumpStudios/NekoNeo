@@ -116,7 +116,7 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
     }
     else if (strncmp(inputString, "help", 4) == 0)
     {
-        strcpy(responseBuffer, "\"Close\" - Close console; \"load\" + level name - load level; \"save\" + level name - save level;\n \"nuke\" - Clear level; \"quit\" - quit editor; \"stepSize\" + int param - set the global step size");
+        strcpy(responseBuffer, "\"Close\" - Close console; \"load\" + level name - load level; \"save\" + level name - save level; \"test\" - Test level; \n \"nuke\" - Clear level; \"quit\" - quit editor; \"stepSize\" + int param - set the global step size");
     }
     else if (strncmp(inputString, "nuke", 4) == 0)
     {
@@ -185,7 +185,14 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
     }
     else
     {
-        sprintf(responseBuffer, "'%s' is not recognsied as a command", inputString);
+        if (strnlen(inputString, MAX_INPUT_CHARS) > 0)
+        {
+            sprintf(responseBuffer, "'%s' is not recognsied as a command", inputString);
+        }
+        else
+        {
+            sprintf(responseBuffer, "Please enter a command");
+        }
     }
 }
 
