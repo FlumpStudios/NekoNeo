@@ -1524,7 +1524,7 @@ void DrawGameplayScreen(void)
 
     BeginShaderMode(alphaDiscard);
     DrawElements();    
-    EndShaderMode(alphaDiscard);   
+    EndShaderMode();   
     EndMode3D(); 
 
     if (currentEditorMode == Mode_Console)
