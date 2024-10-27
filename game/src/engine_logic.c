@@ -15,7 +15,6 @@
 #include <string.h>
 #include "raymath.h"
 
-char SFG_levelPack[MAX_LEVEL_PACK_NAME] = EMPTY;
 static Mode PreviousMode = Mode_Editor;
 static bool _levelReady = false;
 static bool _2D_Mode = false;
@@ -82,11 +81,11 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
 
         if (spacePos != NULL) {
             char* path = spacePos + 1;
-            if (strcmp(SFG_levelPack, EMPTY) != 0)
+            if (strcmp(levelPack, EMPTY) != 0)
             {
                 char tempPath[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
                 strcpy(tempPath, path);
-                sprintf(path, "%s/%s", SFG_levelPack, tempPath);
+                sprintf(path, "%s/%s", levelPack, tempPath);
             }
         
             if (!SFG_loadLevelFromFile(level, path))
@@ -116,11 +115,11 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
         {
             if (spacePos != NULL) {
                 char* path = spacePos + 1;
-                if (strcmp(SFG_levelPack, EMPTY) != 0)
+                if (strcmp(levelPack, EMPTY) != 0)
                 {
                     char tempPath[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
                     strcpy(tempPath, path);
-                    sprintf(path, "%s/%s", SFG_levelPack, tempPath);
+                    sprintf(path, "%s/%s", levelPack, tempPath);
                 }
             
                 if (SaveLevel(level, path))
@@ -164,7 +163,7 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
     }
     else if (strncmp(inputString, "CLEARLEVELPACK", 14) == 0)
     {
-        memset(SFG_levelPack, NULL, MAX_LEVEL_PACK_NAME);
+        memset(levelPack, NULL, MAX_LEVEL_PACK_NAME);
         strcpy(responseBuffer, "Level pack cleared");
     }
     else if (strncmp(inputString, "SETLEVELPACK", 12) == 0)
@@ -182,15 +181,15 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
         }
         else
         {
-            strcpy(SFG_levelPack, inputString + 13);
-            sprintf(responseBuffer, "Level pack updated to %s", SFG_levelPack);
+            strcpy(levelPack, inputString + 13);
+            sprintf(responseBuffer, "Level pack updated to %s", levelPack);
         }
     }
     else if (strncmp(inputString, "LEVELPACK", 9) == 0)
     {
-        if (strcmp(SFG_levelPack, EMPTY) != 0)
+        if (strcmp(levelPack, EMPTY) != 0)
         {
-            sprintf(responseBuffer, "%s", SFG_levelPack);
+            sprintf(responseBuffer, "%s", levelPack);
         }
         else
         {
@@ -1613,7 +1612,7 @@ void DrawGameplayScreen(void)
 
     if (level)
     {    
-        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE, GetFPS(), level->stepSize};
+        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE, GetFPS(), level->stepSize, strcmp(levelPack, EMPTY) == 0 ? "None set": levelPack};
         EUI_DrawDebugData(&d, drawHelpText);
     }
     

@@ -3,6 +3,7 @@
 #include "raylib.h"
 #include <stdio.h>
 #include <stdint.h>
+#include "constants.h"  
 
 enum EntityType {
     Entity_Type_None,
@@ -64,6 +65,7 @@ typedef struct {
     bool isOutside;
     int fps;
     uint8_t stepSize;
+    char* levelPack;
 
 } DebugInfo;
 

@@ -20,4 +20,6 @@ void UnloadEngineScreen(void);
 }
 #endif
 
+char levelPack[51];
+
 #endif // SCREENS_H

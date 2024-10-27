@@ -14,8 +14,16 @@ static void UpdateDrawFrame(void);
 //----------------------------------------------------------------------------------
 // Main entry point
 //----------------------------------------------------------------------------------
-int main(void)
+int main(int argc, char* argv[])
 {
+    for (size_t i = 0; i < argc; i++)
+    {
+        if(i == 1)
+        { 
+            strcpy(levelPack, argv[i]);
+            levelPack[50] = NULL;
+        }
+    }
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, PROJECT_NAME);
     font = LoadFont("resources/mecha.png");    
     InitGameplayScreen();

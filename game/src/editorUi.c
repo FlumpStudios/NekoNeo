@@ -73,6 +73,8 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
 
     DrawText("Camera status:", xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
+    DrawText(TextFormat("- Level pack: %s", debugInfo->levelPack), xpos, y, 10, TEXT_COLOUR);
+    y += SPACING;
     
     DrawText(TextFormat("- Position: (%06.3f, %06.3f, %06.3f)", debugInfo->camera->position.x, debugInfo->camera->position.y, debugInfo->camera->position.z), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
