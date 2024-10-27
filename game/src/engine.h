@@ -19,7 +19,9 @@ void UnloadEngineScreen(void);
 #ifdef __cplusplus
 }
 #endif
+ 
 
+int readyToExit;
 char levelPack[51];
 
 #endif // SCREENS_H

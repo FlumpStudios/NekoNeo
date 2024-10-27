@@ -15,6 +15,16 @@
 #include <string.h>
 #include "raymath.h"
 
+#include <stdio.h>
+#include <sys/stat.h>
+
+#ifdef _WIN32
+#include <direct.h>  // For Windows-specific functions
+#define stat _stat   // Windows uses `_stat` instead of `stat`
+#else
+#include <unistd.h>  // For POSIX functions (optional)
+#endif
+
 static Mode PreviousMode = Mode_Editor;
 static bool _levelReady = false;
 static bool _2D_Mode = false;
@@ -72,11 +82,33 @@ void DrawPlayerStartPosition(void);
 void RefreshMap(bool updateHistory);
 void UnloadEngineScreen(void);
 
-void GetFullPath(char* buffer)
+int directoryExists(const char* path) {
+    struct stat info;
+
+    // Use stat() to check if the path exists
+    if (stat(path, &info) != 0) {
+        // Path does not exist
+        return 0;
+    }
+
+    // Check if it's a directory
+    if (info.st_mode & S_IFDIR) {
+        return 1; // It is a directory
+    }
+
+    return 0; // Path exists but is not a directory
+}
+
+void GetLevelFilePath(char* buffer, char* fileName)
 {
-    if (strcmp(levelPack, EMPTY))
+    memset(buffer, NULL, MAX_SAVE_FILE_NAME);
+    if (strcmp(levelPack, EMPTY) == 0)
+    {   
+        sprintf(buffer, "%s", fileName);
+    }
+    else
     {
-        
+        sprintf(buffer, "%s\\%s", levelPack, fileName);
     }
 }
 
@@ -92,8 +124,10 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
             if (strcmp(levelPack, EMPTY) != 0)
             {
                 char tempPath[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
-                strcpy(tempPath, path);
-                sprintf(path, "%s/%s", levelPack, tempPath);
+
+                GetLevelFilePath(tempPath, path);
+
+                strcpy(path, tempPath);
             }
         
             if (!SFG_loadLevelFromFile(level, path))
@@ -126,8 +160,8 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
                 if (strcmp(levelPack, EMPTY) != 0)
                 {
                     char tempPath[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
-                    strcpy(tempPath, path);
-                    sprintf(path, "%s/%s", levelPack, tempPath);
+                    GetLevelFilePath(tempPath, path);
+                    strcpy(path, tempPath);
                 }
             
                 if (SaveLevel(level, path))
@@ -136,7 +170,7 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
                 }
                 else
                 {
-                    sprintf(responseBuffer, "Error saving level '%s'", path);
+                    sprintf(responseBuffer, "Error saving level '%s'. Please ensure level pack exists", path);
                 }
             }
         }
@@ -145,6 +179,7 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
     {
         // TODO: Properly release everything        
         UnloadEngineScreen();
+        return;
     }
     // TODO: do a decent job of adding help
     /*else if (strncmp(inputString, "HELP", 4) == 0)
@@ -169,28 +204,34 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
         memset(_consoleHistory, 0, sizeof(ConsoleHistory) * CONSOLE_HISTORY_SIZE);
         memset(name, 0, MAX_INPUT_CHARS);
     }
-    else if (strncmp(inputString, "CLEARLEVELPACK", 14) == 0)
-    {
-        memset(levelPack, NULL, MAX_LEVEL_PACK_NAME);
-        strcpy(responseBuffer, "Level pack cleared");
-    }
     else if (strncmp(inputString, "SETLEVELPACK", 12) == 0)
     {
-        char buffer[MAX_INPUT_CHARS];
-        memset(buffer, NULL, MAX_INPUT_CHARS);
-        strcpy(buffer, inputString + 13);
-        if (strnlen(buffer, MAX_LEVEL_PACK_NAME) >= MAX_LEVEL_PACK_NAME)
+        char buf[MAX_LEVEL_PACK_NAME];
+
+        sprintf(buf, "%s%s", saveLocation, query + 13);
+
+        if (directoryExists(buf) != 1)  
         {
-            strcpy(responseBuffer, "Pack name too long");
-        }
-        else if (strnlen(buffer, MAX_LEVEL_PACK_NAME) < 1)
-        {
-            strcpy(responseBuffer, "Please enter a pack name");
+            sprintf(responseBuffer, "%s is not a valid level pack", query );
         }
         else
         {
-            strcpy(levelPack, inputString + 13);
-            sprintf(responseBuffer, "Level pack updated to %s", levelPack);
+            char buffer[MAX_INPUT_CHARS];
+            memset(buffer, NULL, MAX_INPUT_CHARS);
+            strcpy(buffer, inputString + 13);
+            if (strnlen(buffer, MAX_LEVEL_PACK_NAME) >= MAX_LEVEL_PACK_NAME)
+            {
+                strcpy(responseBuffer, "Pack name too long");
+            }
+            else if (strnlen(buffer, MAX_LEVEL_PACK_NAME) < 1)
+            {
+                strcpy(responseBuffer, "Please enter a pack name");
+            }
+            else
+            {
+                strcpy(levelPack, inputString + 13);
+                sprintf(responseBuffer, "Level pack updated to %s", levelPack);
+            }
         }
     }
     else if (strncmp(inputString, "LEVELPACK", 9) == 0)
@@ -676,7 +717,10 @@ void InitElements(bool saveOnComplete)
         }
     }
 
-    if (saveOnComplete && SaveLevel(level, DEBUG_LEVEL))
+    char buffer[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
+    GetLevelFilePath(buffer, DEBUG_LEVEL);
+
+    if (saveOnComplete && SaveLevel(level, buffer))
     {
         TraceLog(LOG_INFO, "Level saved on wall update");
     }
@@ -814,7 +858,10 @@ void InitWalls(bool saveOnComplete)
         col++;
     }
 
-    if (saveOnComplete && SaveLevel(level, DEBUG_LEVEL))
+    char buffer[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
+    GetLevelFilePath(buffer, DEBUG_LEVEL);
+
+    if (saveOnComplete && SaveLevel(level, buffer))
     {
         TraceLog(LOG_INFO, "Level saved on wall update");
     }
@@ -838,9 +885,12 @@ void InitGameplayScreen(void)
     }
     else {
         
+        char buffer[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
+        GetLevelFilePath(buffer, DEBUG_LEVEL);
+
         memset(level,0,sizeof(SFG_Level));
 
-        if (!SFG_loadLevelFromFile(level, DEBUG_LEVEL))
+        if (!SFG_loadLevelFromFile(level, buffer))
         {
             TraceLog(LOG_ERROR, "Error Loading debug level from file");
 
@@ -899,8 +949,10 @@ void InitGameplayScreen(void)
     }
     else {
         memset(level, 0, sizeof(SFG_Level));
+        char buffer[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
+        GetLevelFilePath(buffer, DEBUG_LEVEL);
 
-        if (!SFG_loadLevelFromFile(level, DEBUG_LEVEL))
+        if (!SFG_loadLevelFromFile(level, buffer))
         {
             TraceLog(LOG_ERROR, "Error Loading level from file");
         }
@@ -1241,7 +1293,11 @@ void UpdateGameplayScreen(void)
             level->playerStart[0] = col;
             level->playerStart[1] = row;
 
-            if (SaveLevel(level, DEBUG_LEVEL))
+            char buffer[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
+            GetLevelFilePath(buffer, DEBUG_LEVEL);
+
+
+            if (SaveLevel(level, buffer))
             {
                 TraceLog(LOG_INFO, "Level saved on player position update");
             }
@@ -1743,11 +1799,6 @@ void DrawWalls(void)
 // Gameplay Screen Unload logic
 void UnloadEngineScreen(void)
 {
-    // TODO: Unload GAMEPLAY screen variables here!
-    MemFree(mapBlocks);
-    MemFree(items);
-    MemFree(level);
-    level = NULL;
-    _blockCount = 0;    
+    readyToExit = 1;
 }
 

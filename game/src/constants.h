@@ -3,7 +3,7 @@
 
 #define EMPTY ""
 #define MAX_LEVEL_PACK_NAME 50
-#define MAX_SAVE_FILE_NAME 5
+#define MAX_SAVE_FILE_NAME 50
 
 
 #define MAX_STEP_SIZE 10
@@ -47,6 +47,12 @@
 
 // The higest a step can be before a player can step on it
 #define PLAYER_STAIR_HEIGHT 0.3f
+
+#ifdef DEBUG
+#define saveLocation "C:/Projects/NekoEngine/levels/"
+#else
+#define saveLocation "levels/"
+#endif
 
 // The highest a step can be other than the wall
 #define MAX_STEP_HEIGHT 7

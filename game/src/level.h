@@ -242,11 +242,7 @@ void initLevel(SFG_Level* level)
 
 bool SaveLevel(SFG_Level *level, char* levelName)
 {
-#ifdef DEBUG
-    const char* saveLocation ="C:/Projects/NekoEngine/levels/";
-#else
-    const char* saveLocation = "levels/";
-#endif
+
     SFG_Level* tempLevel;
     tempLevel = MemAlloc(sizeof(SFG_Level));
     

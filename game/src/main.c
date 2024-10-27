@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     SetExitKey(KEY_NULL);
 
     // Main game loop
-    while (!WindowShouldClose())   
+    while (!WindowShouldClose() && readyToExit == 0)
     {     
         // Update and draw frame
         UpdateDrawFrame();
