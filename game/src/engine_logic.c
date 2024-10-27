@@ -72,6 +72,14 @@ void DrawPlayerStartPosition(void);
 void RefreshMap(bool updateHistory);
 void UnloadEngineScreen(void);
 
+void GetFullPath(char* buffer)
+{
+    if (strcmp(levelPack, EMPTY))
+    {
+        
+    }
+}
+
 void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
 {
     const char* inputString = TextToUpper(query);
