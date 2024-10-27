@@ -15,6 +15,7 @@
 #include <string.h>
 #include "raymath.h"
 
+char SFG_levelPack[MAX_LEVEL_PACK_NAME] = EMPTY;
 static Mode PreviousMode = Mode_Editor;
 static bool _levelReady = false;
 static bool _2D_Mode = false;
@@ -72,14 +73,21 @@ void DrawPlayerStartPosition(void);
 void RefreshMap(bool updateHistory);
 void UnloadEngineScreen(void);
 
-void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
+void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
 {
-    if (strncmp(inputString, "load", 4) == 0)
+    const char* inputString = TextToUpper(query);
+    if (strncmp(inputString, "LOAD", 4) == 0)
     {
         const char* spacePos = strstr(inputString, " ");
 
         if (spacePos != NULL) {
-            const char* path = spacePos + 1;
+            char* path = spacePos + 1;
+            if (strcmp(SFG_levelPack, EMPTY) != 0)
+            {
+                char tempPath[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
+                strcpy(tempPath, path);
+                sprintf(path, "%s/%s", SFG_levelPack, tempPath);
+            }
         
             if (!SFG_loadLevelFromFile(level, path))
             {
@@ -92,33 +100,51 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
             }
         }        
     }
-    else if (strncmp(inputString, "save", 4) == 0)
-    {
-        const char* spacePos = strstr(inputString, " ");
-
-        if (spacePos != NULL) {
-            const char* path = spacePos + 1;
+    else if (strncmp(inputString, "SAVE", 4) == 0)
+    {   
+        char* spacePos = strstr(inputString, " ");
+        
+        if (spacePos == 0)
+        {
+            strcpy(responseBuffer, "Error: Invalid file name");
+        }
+        else if (strnlen(spacePos, MAX_INPUT_CHARS) > MAX_SAVE_FILE_NAME)
+        {
+            sprintf(responseBuffer, "Error: Filename exceeded max character limit %i", MAX_SAVE_FILE_NAME);
+        }
+        else
+        {
+            if (spacePos != NULL) {
+                char* path = spacePos + 1;
+                if (strcmp(SFG_levelPack, EMPTY) != 0)
+                {
+                    char tempPath[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
+                    strcpy(tempPath, path);
+                    sprintf(path, "%s/%s", SFG_levelPack, tempPath);
+                }
             
-            if (SaveLevel(level, path))
-            {
-                sprintf(responseBuffer, "level '%s' saved successfully", path);
-            }
-            else
-            {
-                sprintf(responseBuffer, "Error saving level '%s'", path);
+                if (SaveLevel(level, path))
+                {
+                    sprintf(responseBuffer, "level '%s' saved successfully", path);
+                }
+                else
+                {
+                    sprintf(responseBuffer, "Error saving level '%s'", path);
+                }
             }
         }
     }
-    else if (strncmp(inputString, "quit", 4) == 0)
+    else if (strncmp(inputString, "QUIT", 4) == 0)
     {
         // TODO: Properly release everything        
         UnloadEngineScreen();
     }
-    else if (strncmp(inputString, "help", 4) == 0)
+    // TODO: do a decent job of adding help
+    /*else if (strncmp(inputString, "HELP", 4) == 0)
     {
-        strcpy(responseBuffer, "\"Close\" - Close console; \"load\" + level name - load level; \"save\" + level name - save level; \"test\" - Test level; \n \"nuke\" - Clear level; \"quit\" - quit editor; \"stepSize\" + int param - set the global step size");
-    }
-    else if (strncmp(inputString, "nuke", 4) == 0)
+        strcpy(responseBuffer, "\"Close\" - Close console; \"load\" + level name - load level; \"save\" + level name - save level; \"test\" - Test level; setLevelPack + level pack \n \"nuke\" - Clear level; \"quit\" - quit editor; \"setStepSize\" + int param - set the global step size");
+    }*/
+    else if (strncmp(inputString, "NUKE", 4) == 0)
     {
         memset(level, 0, sizeof(SFG_Level));
         SFG_loadLevelFromFile(level, BASE_LEVEL_NAME);
@@ -126,20 +152,65 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
         RefreshMap(true);
         strcpy(responseBuffer, "Map Nuked!!! Exit console and Ctrl + Z if you're feeling regret");
     }
-    else if (strncmp(inputString, "close", 5) == 0)
+    else if (strncmp(inputString, "CLOSE", 5) == 0)
     {
         currentEditorMode = PreviousMode;
         strcpy(responseBuffer, "Console closed");
     }
-    else if (strncmp(inputString, "cls", 3) == 0)
+    else if (strncmp(inputString, "CLS", 3) == 0)
     {
         memset(_consoleHistory, 0, sizeof(ConsoleHistory) * CONSOLE_HISTORY_SIZE);
         memset(name, 0, MAX_INPUT_CHARS);
     }
-    else if (strncmp(inputString, "stepSize", 8) == 0 || strncmp(inputString, "stepsize", 8) == 0)
+    else if (strncmp(inputString, "CLEARLEVELPACK", 14) == 0)
+    {
+        memset(SFG_levelPack, NULL, MAX_LEVEL_PACK_NAME);
+        strcpy(responseBuffer, "Level pack cleared");
+    }
+    else if (strncmp(inputString, "SETLEVELPACK", 12) == 0)
+    {
+        char buffer[MAX_INPUT_CHARS];
+        memset(buffer, NULL, MAX_INPUT_CHARS);
+        strcpy(buffer, inputString + 13);
+        if (strnlen(buffer, MAX_LEVEL_PACK_NAME) >= MAX_LEVEL_PACK_NAME)
+        {
+            strcpy(responseBuffer, "Pack name too long");
+        }
+        else if (strnlen(buffer, MAX_LEVEL_PACK_NAME) < 1)
+        {
+            strcpy(responseBuffer, "Please enter a pack name");
+        }
+        else
+        {
+            strcpy(SFG_levelPack, inputString + 13);
+            sprintf(responseBuffer, "Level pack updated to %s", SFG_levelPack);
+        }
+    }
+    else if (strncmp(inputString, "LEVELPACK", 9) == 0)
+    {
+        if (strcmp(SFG_levelPack, EMPTY) != 0)
+        {
+            sprintf(responseBuffer, "%s", SFG_levelPack);
+        }
+        else
+        {
+            strcpy(responseBuffer, "No level pack has been set");
+        }
+    }
+    else if (strncmp(inputString, "STEPSIZE", 8) == 0)
+    {
+        if (level)
+        {
+            sprintf(responseBuffer,"%i", level->stepSize);
+        }
+        else
+        {
+            strcpy(responseBuffer, "Something went wrong: could not find level data");           
+        }
+    }
+    else if (strncmp(inputString, "SETSTEPSIZE", 11) == 0)
     {        
-
-        if (strnlen(inputString, 100) < 10)
+        if (strnlen(inputString, 100) < 13)
         {            
             strcpy(responseBuffer, "Please enter a value for step size");
         }
@@ -147,22 +218,22 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
         {
             char* endptr = NULL;
 
-            auto size = strtol(&inputString[9], &endptr, 10);
+            auto size = strtol(&inputString[12], &endptr, 13);
 
             if (*endptr != '\0') {
                 strcpy(responseBuffer, "Could not read step size value");
             }
             else if (size > MAX_STEP_SIZE)
             {
-                char toBigbuffer[40];
-                const char* maxSizeResponse = sprintf(toBigbuffer, "Step size must be equel to or below %i", MAX_STEP_SIZE);
-                strcpy(responseBuffer, toBigbuffer);
+                char tooBigbuffer[40];
+                const char* maxSizeResponse = sprintf(tooBigbuffer, "Step size must be equel to or below %i", MAX_STEP_SIZE);
+                strcpy(responseBuffer, tooBigbuffer);
             }
             else if (size < 1)
             {
-                char toBigbuffer[40];
-                const char* maxSizeResponse = sprintf(toBigbuffer, "Step size cannon be below 1");
-                strcpy(responseBuffer, toBigbuffer);
+                char tooSmallbuffer[40];
+                const char* maxSizeResponse = sprintf(tooSmallbuffer, "Step size cannont be below 1");
+                strcpy(responseBuffer, tooSmallbuffer);
             }
             else {
                 level->stepSize = size;
@@ -172,7 +243,7 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
             
         }        
     }
-    else if (strncmp(inputString, "test", 4) == 0)
+    else if (strncmp(inputString, "TEST", 4) == 0)
     {    
 
 #ifdef  DEBUG
@@ -187,7 +258,7 @@ void ConsoleQuery(const char* inputString, char* responseBuffer, size_t size)
     {
         if (strnlen(inputString, MAX_INPUT_CHARS) > 0)
         {
-            sprintf(responseBuffer, "'%s' is not recognsied as a command", inputString);
+            sprintf(responseBuffer, "'%s' is not recognsied as a command", query);
         }
         else
         {
@@ -1542,7 +1613,7 @@ void DrawGameplayScreen(void)
 
     if (level)
     {    
-        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE, GetFPS()};
+        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE, GetFPS(), level->stepSize};
         EUI_DrawDebugData(&d, drawHelpText);
     }
     

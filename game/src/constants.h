@@ -1,6 +1,11 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#define EMPTY ""
+#define MAX_LEVEL_PACK_NAME 50
+#define MAX_SAVE_FILE_NAME 5
+
+
 #define MAX_STEP_SIZE 10
 #define BASE_LEVEL_NAME "base"
 #define TILE_DICTIONARY_SIZE 64

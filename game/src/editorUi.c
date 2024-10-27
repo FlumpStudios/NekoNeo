@@ -89,6 +89,9 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
     DrawText(TextFormat("- FLoor height: %i", debugInfo->floorHeight), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
 
+    DrawText(TextFormat("- Step size: %i", debugInfo->stepSize), xpos, y, 10, TEXT_COLOUR);
+    y += SPACING;
+
     DrawText(TextFormat("- Current Fps: %i", debugInfo->fps), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
 

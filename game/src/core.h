@@ -63,6 +63,7 @@ typedef struct {
     uint8_t floorHeight;
     bool isOutside;
     int fps;
+    uint8_t stepSize;
 
 } DebugInfo;
 
