@@ -298,8 +298,17 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
         strcpy(responseBuffer, "Map testing current disabled in debug");
         return;
 #endif
+        char exeLocation[MAX_LEVEL_PACK_NAME + 20];
 
-        const char* exeLocation = "Ruyn.exe -w -d";        
+        if (levelPack == EMPTY)
+        {
+            sprintf(exeLocation, "Ruyn.exe -w -d");
+        }
+        else
+        {
+             sprintf(exeLocation,"Ruyn.exe -p %s -w -d", levelPack);
+        }
+        
         system(exeLocation);
     }
     else
