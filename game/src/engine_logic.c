@@ -1797,7 +1797,8 @@ void DrawWalls(void)
                     DrawCubeWires(mapBlocks[i].position, 1.0f, mapBlocks[i].drawHeight, 1.0f, WHITE);
                 }
                 else if (currentRenderMode == RenerMode_CollisionBlock)
-                {   if(mapBlocks[i].textureIndex)
+                {   
+                    //if(mapBlocks[i].textureIndex)
                     DrawBoundingBox(mapBlocks[i].boundingBox, BLUE);
                 }
             }
