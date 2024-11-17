@@ -311,6 +311,26 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
         
         system(exeLocation);
     }
+    else if (strncmp(inputString, "PREVIEW", 4) == 0)
+    {
+
+#ifdef  DEBUG
+        strcpy(responseBuffer, "Map testing current disabled in debug");
+        return;
+#endif
+        char exeLocation[MAX_LEVEL_PACK_NAME + 20];
+
+        if (levelPack == EMPTY)
+        {
+            sprintf(exeLocation, "Ruyn.exe -w -d -t");
+        }
+        else
+        {
+            sprintf(exeLocation, "Ruyn.exe -p %s -w -d -t", levelPack);
+        }
+
+        system(exeLocation);
+    }
     else
     {
         if (strnlen(inputString, MAX_INPUT_CHARS) > 0)
