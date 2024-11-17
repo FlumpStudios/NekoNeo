@@ -919,34 +919,34 @@ void InitGameplayScreen(void)
     for (uint8_t i = 0; i < WALL_TEXTURE_COUNT; i++)
     {
         char fullPath[256];
-        sprintf(fullPath, "C:\\Projects\\NekoEngine\\WallTextures\\o_%u.png", i);
+        sprintf(fullPath, "C:\\Projects\\NekoEngine\\GameData\\WallTextures\\o_%u.png", i);
         wallTextures[i] = LoadTexture(fullPath);
     }
 
     for (uint8_t i = 0; i < ITEM_COUNT; i++)
     {
         char fullPath[256];
-        sprintf(fullPath, "C:\\Projects\\NekoEngine\\Items\\o_%u.png", i);
+        sprintf(fullPath, "C:\\Projects\\NekoEngine\\GameData\\Items\\o_%u.png", i);
         itemTextures[i] = LoadTexture(fullPath);
     }
 
     for (uint8_t i = 0; i < WEAPON_COUNT; i++)
     {
         char fullPath[256];
-        sprintf(fullPath, "C:\\Projects\\NekoEngine\\Weapons\\o_%u.png", i);
+        sprintf(fullPath, "C:\\Projects\\NekoEngine\\GameData\\Weapons\\o_%u.png", i);
         weaponsTextures[i] = LoadTexture(fullPath);
     }
 
-    spiderEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_0.png");
-    destroyerEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_3.png");
-    warriorEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_6.png");
-    plasmaBotEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_9.png");
-    enderEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_11.png");
-    turretEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_14.png");
-    exploderEnemy = LoadTexture("C:/Projects/NekoEngine/Enemies/o_17.png");
-    blocker = LoadTexture("C:/Projects/NekoEngine/assets/Blocker.png");
-    lock = LoadTexture("C:/Projects/NekoEngine/assets/lock.png");
-    playerMarker = LoadModel("C:/Projects/NekoEngine/assets/PlayerStartPosition.obj");
+    spiderEnemy = LoadTexture("C:/Projects/NekoEngine/GameData/Enemies/o_0.png");
+    destroyerEnemy = LoadTexture("C:/Projects/NekoEngine/GameData/Enemies/o_3.png");
+    warriorEnemy = LoadTexture("C:/Projects/NekoEngine/GameData/Enemies/o_6.png");
+    plasmaBotEnemy = LoadTexture("C:/Projects/NekoEngine/GameData/Enemies/o_9.png");
+    enderEnemy = LoadTexture("C:/Projects/NekoEngine/GameData/Enemies/o_12.png");
+    turretEnemy = LoadTexture("C:/Projects/NekoEngine/GameData/Enemies/o_15.png");
+    exploderEnemy = LoadTexture("C:/Projects/NekoEngine/GameData/Enemies/o_18.png");
+    blocker = LoadTexture("C:/Projects/NekoEngine/GameData/assets/Blocker.png");
+    lock = LoadTexture("C:/Projects/NekoEngine/GameData/assets/lock.png");
+    playerMarker = LoadModel("C:/Projects/NekoEngine/GameData/assets/PlayerStartPosition.obj");
 
 #else
     alphaDiscard = LoadShader(NULL, "data/alphaDiscard.fs");
@@ -996,9 +996,9 @@ void InitGameplayScreen(void)
     destroyerEnemy = LoadTexture("Enemies/o_3.png");
     warriorEnemy = LoadTexture("Enemies/o_6.png");
     plasmaBotEnemy = LoadTexture("Enemies/o_9.png");
-    enderEnemy = LoadTexture("Enemies/o_11.png");
-    turretEnemy = LoadTexture("Enemies/o_14.png");
-    exploderEnemy = LoadTexture("Enemies/o_17.png");
+    enderEnemy = LoadTexture("Enemies/o_12.png");
+    turretEnemy = LoadTexture("Enemies/o_15.png");
+    exploderEnemy = LoadTexture("Enemies/o_18.png");
     blocker = LoadTexture("assets/Blocker.png");
     playerMarker = LoadModel("assets/PlayerStartPosition.obj");
     lock = LoadTexture("assets/lock.png");
