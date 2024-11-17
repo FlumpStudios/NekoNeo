@@ -42,9 +42,6 @@ static void DrawControls()
     DrawText("- Toggle fullsreen : F11", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText("- Toggle level outside : F2", 15, y, 10, TEXT_COLOUR);
-    y += SPACING;
-
     DrawText("- Add lock to door : 1,2,3. Zero to remove", 15, y, 10, TEXT_COLOUR);
     y += SPACING;
     
@@ -95,10 +92,6 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
     y += SPACING;
 
     DrawText(TextFormat("- Current Fps: %i", debugInfo->fps), xpos, y, 10, TEXT_COLOUR);
-    y += SPACING;
-
-    const char* outsideString = debugInfo->isOutside ? "True" : "False";
-    DrawText(TextFormat("- Is level outside: %s", outsideString), xpos, y, 10, TEXT_COLOUR);
     
     DrawRectangle(xpos -10, Y_START - 10, 195, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));
     DrawRectangleLines(xpos - 10, Y_START - 10, 195, y + 10, RECTANGLE_EDGE_COLOUR);

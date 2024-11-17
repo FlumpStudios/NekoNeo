@@ -1360,8 +1360,9 @@ void UpdateGameplayScreen(void)
 
     if (IsKeyPressed(KEY_F2))
     {
-        level->ceilHeight = (level->ceilHeight == OUTSIDE_CEIL_VALUE ? level->ceilHeight = level->floorHeight : OUTSIDE_CEIL_VALUE);
-        RefreshMap(true);
+        // Disabled for now as getting messed up doors
+        // level->ceilHeight = (level->ceilHeight == OUTSIDE_CEIL_VALUE ? level->ceilHeight = level->floorHeight : OUTSIDE_CEIL_VALUE);
+        // RefreshMap(true);
     }
 
     if (IsKeyPressed(KEY_F11))
