@@ -128,27 +128,22 @@ uint8_t GetNextElementType(uint8_t currentItem)
 
 uint8_t GetPreviousElementType(uint8_t currentItem)
 {
-
-    if (currentItem == 0x0f)
+    
+    if (currentItem <= 0x01)
     {
-        return 0x13;
+        return 0x26;
     }
 
     if (currentItem == 0x13)
     {
-        return 0x20;
+        return 0x0f;
     }
 
-    if (currentItem >= 0x20 && currentItem < 0x26)
+    if (currentItem == 0x20)
     {
-        return --currentItem;
+        return 0x13;
     }
 
-    if (currentItem > 0x01)
-    {
-        return --currentItem;
-    }
-
-    return 0x26;
+    return --currentItem;
 }
 

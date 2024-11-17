@@ -1065,8 +1065,7 @@ void ScrollUpEntities(void)
     }
     else if (selectionLocation.entityType == Entity_Type_Item)
     {
-        uint8_t t = _currentItemSelection;
-        uint8_t previousElement = GetPreviousElementType(t);
+        uint8_t previousElement = GetPreviousElementType(_currentItemSelection);
         level->elements[selectionLocation.itemIndex].type = previousElement;
         _currentItemSelection = previousElement;
         RefreshMap(true);
