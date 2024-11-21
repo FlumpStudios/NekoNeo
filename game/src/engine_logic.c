@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include "core.h"
 #include "neko_utils.h"
-#include "constants.h"
 #include "rcamera.h"
 #include "editorUi.h"
 #include <string.h>
@@ -39,6 +38,7 @@ static int _currentItemSelection = 1;
 static int cameraMode = CAMERA_FREE;
 static SFG_Level* level;
 static Camera3D camera = { 0 };
+static char currentLevel[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME] = { 0 };
 
 static LevelHistory _levelHistory;
 static size_t _historySize = INITIAL_HISTORY_BUFFER_SIZE;
@@ -135,44 +135,60 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
                 sprintf(responseBuffer, "Error loading level '%s'", path);
             }
             else
-            {       
+            {    
+                strcpy_s(currentLevel, MAX_SAVE_FILE_NAME, path);
                 sprintf(responseBuffer, "level '%s' loaded successfully", path);
                 RefreshMap(true);
             }
         }        
     }
+    else if (strncmp(inputString, "FILE", 4) == 0)
+    {
+        if (strnlen(currentLevel, MAX_SAVE_FILE_NAME) == 0)
+        {
+            strcpy(responseBuffer, "No level file has been loaded");
+        }
+        else
+        {        
+            strcpy_s(responseBuffer, MAX_SAVE_FILE_NAME, currentLevel);
+        }
+    }
     else if (strncmp(inputString, "SAVE", 4) == 0)
     {   
         char* spacePos = strstr(inputString, " ");
         
-        if (spacePos == 0)
+        if (spacePos == 0 && strlen(currentLevel) == 0)
         {
-            strcpy(responseBuffer, "Error: Invalid file name");
+            strcpy(responseBuffer, "There is no active save file! Please specify a name for the save file");
         }
-        else if (strnlen(spacePos, MAX_INPUT_CHARS) > MAX_SAVE_FILE_NAME)
+        else if (spacePos > 0 && strnlen(spacePos, MAX_INPUT_CHARS) > MAX_SAVE_FILE_NAME)
         {
             sprintf(responseBuffer, "Error: Filename exceeded max character limit %i", MAX_SAVE_FILE_NAME);
         }
         else
         {
-            if (spacePos != NULL) {
-                char* path = spacePos + 1;
-                if (strcmp(levelPack, EMPTY) != 0)
-                {
-                    char tempPath[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
-                    GetLevelFilePath(tempPath, path);
-                    strcpy(path, tempPath);
-                }
-            
-                if (SaveLevel(level, path))
-                {
-                    sprintf(responseBuffer, "level '%s' saved successfully", path);
-                }
-                else
-                {
-                    sprintf(responseBuffer, "Error saving level '%s'. Please ensure level pack exists", path);
+            if (spacePos > 0)
+            {
+                if (spacePos != NULL) {
+                    char* path = spacePos + 1;
+                    if (strcmp(levelPack, EMPTY) != 0)
+                    {
+                        char tempPath[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
+                        GetLevelFilePath(tempPath, path);
+                        strcpy(currentLevel, tempPath);
+                    }
                 }
             }
+
+            if (SaveLevel(level, currentLevel))
+            {
+                sprintf(responseBuffer, "level '%s' saved successfully", currentLevel);
+            }
+            else
+            {
+                sprintf(responseBuffer, "Error saving level '%s'. Please ensure level pack exists", currentLevel);
+            }
+            
         }
     }
     else if (strncmp(inputString, "QUIT", 4) == 0)
@@ -298,6 +314,11 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
         strcpy(responseBuffer, "Map testing current disabled in debug");
         return;
 #endif
+        if (IsWindowFullscreen)
+        {
+            SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+        }
+
         char exeLocation[MAX_LEVEL_PACK_NAME + 20];
 
         if (levelPack == EMPTY)
@@ -309,6 +330,7 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
              sprintf(exeLocation,"Ruyn.exe -p %s -w -d", levelPack);
         }
         
+
         system(exeLocation);
     }
     else if (strncmp(inputString, "PREVIEW", 4) == 0)
@@ -318,6 +340,11 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
         strcpy(responseBuffer, "Map testing current disabled in debug");
         return;
 #endif
+        if (IsWindowFullscreen)
+        {
+            SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+        }
+
         char exeLocation[MAX_LEVEL_PACK_NAME + 20];
 
         if (levelPack == EMPTY)

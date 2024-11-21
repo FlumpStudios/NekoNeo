@@ -1,6 +1,5 @@
 #ifndef SCREENS_H
 #define SCREENS_H
-
 extern Font font;
 
 
@@ -23,5 +22,4 @@ void UnloadEngineScreen(void);
 
 int readyToExit;
 char levelPack[51];
-
 #endif // SCREENS_H
