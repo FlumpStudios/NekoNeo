@@ -153,6 +153,102 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
             strcpy_s(responseBuffer, MAX_SAVE_FILE_NAME, currentLevel);
         }
     }
+    else if (strncmp(inputString, "CEILCOL", 7) == 0) {
+        sprintf(responseBuffer, "Ceiling colour = %i", level->ceilingColor);
+    }
+    else if (strncmp(inputString, "FLOORCOL", 8) == 0) {
+        sprintf(responseBuffer, "Floor colour = %i", level->floorColor);
+    }
+    else if (strncmp(inputString, "BACKGROUND", 10) == 0) {
+        sprintf(responseBuffer, "Background = %i", level->backgroundImage);
+    }
+    else if (strncmp(inputString, "SETCEILCOL", 10) == 0)
+    {
+        if (strnlen(inputString, 100) < 12)
+        {
+            strcpy(responseBuffer, "Please enter a value for ceil colour");
+        }
+        else
+        {
+            auto col = atoi(&inputString[11]);
+
+            if (col < 1) {
+                strcpy(responseBuffer, "Please enter a valid value");
+            }
+            else if (col > MAX_FLOOR_AND_CEIL_COLOUR)
+            {
+                char tooBigbuffer[40];
+                const char* maxSizeResponse = sprintf(tooBigbuffer, "Ceil colour must be equel to or below %i", MAX_FLOOR_AND_CEIL_COLOUR);
+                strcpy(responseBuffer, tooBigbuffer);
+            }
+            else {
+                level->ceilingColor = col;
+                RefreshMap(true);
+                sprintf(responseBuffer, "Ceiling colour updated to %i", col);
+            }
+        }
+    }
+    else if (strncmp(inputString, "SETFLOORCOL", 11) == 0)
+    {
+        if (strnlen(inputString, 100) < 13)
+        {
+            strcpy(responseBuffer, "Please enter a value for floor colour");
+        }
+        else
+        {
+            auto col = atoi(&inputString[11]);
+
+            if (col < 1) {
+                strcpy(responseBuffer, "Could not read floor colour value");
+            }
+            else if (col > MAX_FLOOR_AND_CEIL_COLOUR)
+            {
+                char tooBigbuffer[40];
+                const char* maxSizeResponse = sprintf(tooBigbuffer, "Floor colour must be equel to or below %i", MAX_FLOOR_AND_CEIL_COLOUR);
+                strcpy(responseBuffer, tooBigbuffer);
+            }            
+            else {
+                level->floorColor = col;
+                RefreshMap(true);
+                sprintf(responseBuffer, "FLoor colour updated to %i", col);
+            }
+        }
+    }
+    else if (strncmp(inputString, "SETBACKGROUND", 13) == 0)
+    {
+        if (strnlen(inputString, 100) < 15)
+        {
+            strcpy(responseBuffer, "Please enter a value for background");
+        }
+        else
+        {
+            char* endptr = NULL;
+
+            auto bg = strtol(&inputString[14], &endptr, 14);
+
+            if (*endptr != '\0') {
+                strcpy(responseBuffer, "Could not read background value");
+            }
+            else if (bg > MAX_BACKGROUND_VALUE)
+            {
+                char tooBigbuffer[50];
+                const char* maxSizeResponse = sprintf(tooBigbuffer, "Background value must be equel to or below %i", MAX_BACKGROUND_VALUE);
+                strcpy(responseBuffer, tooBigbuffer);
+            }
+
+            else if (bg < 1)
+            {
+                char tooSmallbuffer[40];
+                const char* maxSizeResponse = sprintf(tooSmallbuffer, "Background value cannont be below 1");
+                strcpy(responseBuffer, tooSmallbuffer);
+            }
+            else {
+                level->backgroundImage = bg;
+                RefreshMap(true);
+                sprintf(responseBuffer, "Background colour updated to %i", bg);
+            }
+        }
+        }
     else if (strncmp(inputString, "SAVE", 4) == 0)
     {   
         char* spacePos = strstr(inputString, " ");
@@ -188,7 +284,6 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
             {
                 sprintf(responseBuffer, "Error saving level '%s'. Please ensure level pack exists", currentLevel);
             }
-            
         }
     }
     else if (strncmp(inputString, "QUIT", 4) == 0)
@@ -470,7 +565,11 @@ void UpdateHistory(void)
     }
 
     _levelHistory.currentIndex++;
-    _levelHistory.history[_levelHistory.currentIndex] = *level;
+
+    if (level)
+    {
+        _levelHistory.history[_levelHistory.currentIndex] = *level;
+    }
     memset(&_levelHistory.history[_levelHistory.currentIndex + 1], 0, sizeof(SFG_Level));
 }
 
@@ -759,7 +858,6 @@ void InitElements(bool saveOnComplete)
                 };                
             }
 
-
             items[i].type = level->elements[i].type;
             items[i].position = pos;
             items[i].boundingBox = elementbox;
@@ -940,11 +1038,9 @@ void InitGameplayScreen(void)
         TraceLog(LOG_ERROR, "Memory allocation failed on level!");
     }
     else {
-        
+        initLevel(level);
         char buffer[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
         GetLevelFilePath(buffer, DEBUG_LEVEL);
-
-        memset(level,0,sizeof(SFG_Level));
 
         if (!SFG_loadLevelFromFile(level, buffer))
         {
@@ -955,7 +1051,6 @@ void InitGameplayScreen(void)
                 TraceLog(LOG_ERROR, "Error Loading base level from file");
             }
 
-            initLevel(level);
         }
         else
         {
@@ -1005,14 +1100,13 @@ void InitGameplayScreen(void)
     }
     else {
         memset(level, 0, sizeof(SFG_Level));
+        initLevel(level);
         char buffer[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
         GetLevelFilePath(buffer, DEBUG_LEVEL);
 
         if (!SFG_loadLevelFromFile(level, buffer))
         {
-            TraceLog(LOG_ERROR, "Error Loading level from file");
-            initLevel(level);
-            RefreshMap(true);
+            TraceLog(LOG_ERROR, "Error Loading level from file");        
         }
         else
         {
