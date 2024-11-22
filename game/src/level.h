@@ -145,6 +145,7 @@ typedef struct
 } SFG_Level;
 
 
+
 typedef struct {
     SFG_Level* history;
     int currentIndex;    

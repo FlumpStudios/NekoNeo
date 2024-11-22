@@ -1011,6 +1011,8 @@ void InitGameplayScreen(void)
         if (!SFG_loadLevelFromFile(level, buffer))
         {
             TraceLog(LOG_ERROR, "Error Loading level from file");
+            initLevel(level);
+            RefreshMap(true);
         }
         else
         {
