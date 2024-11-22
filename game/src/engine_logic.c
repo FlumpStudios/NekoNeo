@@ -265,7 +265,7 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
     {
         if (level)
         {
-            sprintf(responseBuffer,"%i", level->stepSize);
+            sprintf(responseBuffer,"Current step size =  %i", level->stepSize);
         }
         else
         {
