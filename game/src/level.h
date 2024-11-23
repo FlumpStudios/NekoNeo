@@ -238,6 +238,7 @@ void initLevel(SFG_Level* level)
     {
         level->textureIndices[i] = i + 2;
     }
+    level->doorTextureIndex = DOOR_TEXTURE_INDEX;
 }
 
 
