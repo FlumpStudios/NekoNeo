@@ -1265,7 +1265,7 @@ void UpdateGameplayScreen(void)
         return;
     }
 
-    if (IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE) && currentEditorMode == Mode_Editor)
+    if ((IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE) || IsKeyPressed(KEY_F)) && currentEditorMode == Mode_Editor)
     {        
         _focusedMode = !_focusedMode;
         _focusedMode ? EnableCursor() : DisableCursor();
