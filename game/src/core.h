@@ -66,6 +66,7 @@ typedef struct {
     int fps;
     uint8_t stepSize;
     char* levelPack;
+    int remainingElements;
 
 } DebugInfo;
 
@@ -73,7 +74,7 @@ typedef struct {
     Vector3 position;
     int itemIndex;
     int mapArrayIndex;
-    enum EntityType entityType;
+    enum EntityType entityType;    
 } SelectedEntity;
 
 #endif

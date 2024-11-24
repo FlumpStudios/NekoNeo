@@ -85,13 +85,17 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
     DrawText(TextFormat("- Map Array Index: %i", debugInfo->arrayCell), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText(TextFormat("- FLoor height: %i", debugInfo->floorHeight), xpos, y, 10, TEXT_COLOUR);
+    DrawText(TextFormat("- FLoor Height: %i", debugInfo->floorHeight), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText(TextFormat("- Step size: %i", debugInfo->stepSize), xpos, y, 10, TEXT_COLOUR);
+    DrawText(TextFormat("- Step Size: %i", debugInfo->stepSize), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
 
     DrawText(TextFormat("- Current Fps: %i", debugInfo->fps), xpos, y, 10, TEXT_COLOUR);
+
+    y += SPACING;
+
+    DrawText(TextFormat("- Remaining Elements: %i", debugInfo->remainingElements), xpos, y, 10, TEXT_COLOUR);
     
     DrawRectangle(xpos -10, Y_START - 10, 195, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));
     DrawRectangleLines(xpos - 10, Y_START - 10, 195, y + 10, RECTANGLE_EDGE_COLOUR);

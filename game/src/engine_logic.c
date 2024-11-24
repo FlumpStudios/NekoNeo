@@ -1828,7 +1828,7 @@ void DrawGameplayScreen(void)
 
     if (level)
     {    
-        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE, GetFPS(), level->stepSize, strcmp(levelPack, EMPTY) == 0 ? "None set": levelPack};
+        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE, GetFPS(), level->stepSize, strcmp(levelPack, EMPTY) == 0 ? "None set": levelPack, MAX_ELEMENTS - _elementCount };
         EUI_DrawDebugData(&d, drawHelpText);
     }
     
