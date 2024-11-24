@@ -43,7 +43,7 @@
 #define MAP_ARRAY_SIZE 4096
 #define MAX_ELEMENTS 128
 #define WORKING_DIR ""
-#define MAX_CEIL_HEIGHT 31
+#define MAX_CEIL_HEIGHT 30
 #define GUN_SCALE 4.0f
 
 // The higest a step can be before a player can step on it
