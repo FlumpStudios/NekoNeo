@@ -744,7 +744,11 @@ void RemoveElement(uint16_t i)
         level->elements[i].coords[1] = level->elements[next].coords[1];
         level->elements[i].type = level->elements[next].type;
         i++;
-    };
+    };  
+    // Reset the final element
+    level->elements[i].type = 0;
+    level->elements[i].coords[0] = 0;
+    level->elements[i].coords[1] = 0;
 }
 
 int DoesPositionHaveDoor(Vector3 location)
