@@ -560,7 +560,7 @@ void UpdateHistory(void)
         _levelHistory.history = MemAlloc(newSize);
         assert(_levelHistory.history);
 
-        memcpy(_levelHistory.history, buffer, newSize);
+        memcpy(_levelHistory.history, buffer, originalSize);
         MemFree(buffer);
     }
 
