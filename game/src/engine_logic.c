@@ -751,7 +751,7 @@ void RemoveElement(uint16_t i)
     level->elements[i].coords[1] = 0;
 }
 
-int DoesPositionHaveDoor(Vector3 location)
+int DoesPositionHaveElement(Vector3 location)
 {
     uint8_t x = 0;
     uint8_t y = 0;
@@ -1358,7 +1358,7 @@ void UpdateGameplayScreen(void)
     {
         if (selectionLocation.entityType == Entity_Type_Wall && level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK)
         {
-            int index = DoesPositionHaveDoor(selectionLocation.position);
+            int index = DoesPositionHaveElement(selectionLocation.position);
         
             if (index >= 0)
             {
@@ -1380,7 +1380,7 @@ void UpdateGameplayScreen(void)
                 GetEntityPositionFromPosition(selectionLocation.position, &x, &y);
                 
                 
-                int index = DoesPositionHaveDoor(selectionLocation.position);                
+                int index = DoesPositionHaveElement(selectionLocation.position);                
                 bool incCounter = false;
 
                 if (index < 0)
@@ -1426,7 +1426,7 @@ void UpdateGameplayScreen(void)
             else
             {
                 level->mapArray[selectionLocation.mapArrayIndex] = (level->mapArray[selectionLocation.mapArrayIndex] + 7) & (~DOOR_MASK);
-                int k = DoesPositionHaveDoor(selectionLocation.position);
+                int k = DoesPositionHaveElement(selectionLocation.position);
                 if(k >= 0)
                 {
                     RemoveElement(k);
@@ -1637,7 +1637,7 @@ void UpdateGameplayScreen(void)
             if(level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK)
             { 
 
-                int doorIndex = DoesPositionHaveDoor(selectionLocation.position);
+                int doorIndex = DoesPositionHaveElement(selectionLocation.position);
                 if (doorIndex >= 0)
                 {                    
                     RemoveElement(doorIndex);
