@@ -730,7 +730,7 @@ void SetSelectionBlockLocation(void)
 
         if (_currentWallSelection > DOOR_MASK)
         {
-            _currentWallSelection -= DOOR_MASK;
+            _currentWallSelection = (_currentWallSelection + 7) & (~DOOR_MASK);
         }
     
 }
