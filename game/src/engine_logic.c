@@ -13,7 +13,6 @@
 #include "editorUi.h"
 #include <string.h>
 #include "raymath.h"
-
 #include <stdio.h>
 #include <sys/stat.h>
 
@@ -38,6 +37,7 @@ static int _currentItemSelection = 1;
 static int cameraMode = CAMERA_FREE;
 static SFG_Level* level;
 static Camera3D camera = { 0 };
+static Camera2D camera2d = { 0 };
 static char currentLevel[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME] = { 0 };
 
 static LevelHistory _levelHistory;
@@ -696,7 +696,10 @@ void SetSelectionBlockLocation(void)
             selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
             if (foundEntityType == Entity_Type_Wall)
             {
-                _currentWallSelection = level->mapArray[selectionLocation.mapArrayIndex];
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                {
+                    _currentWallSelection = level->mapArray[selectionLocation.mapArrayIndex];
+                }
             }
         }
         else if (foundEntityType == Entity_Type_Item)
@@ -705,7 +708,10 @@ void SetSelectionBlockLocation(void)
             selectionLocation.itemIndex = nearestSelection;
             selectionLocation.position = items[nearestSelection].position;
             selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);            
-            _currentItemSelection = level->elements[nearestSelection].type;            
+            if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+            {
+                _currentItemSelection = level->elements[nearestSelection].type;     
+            }
         }
         
         if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && foundEntityType != Entity_Type_Item)
@@ -1758,7 +1764,7 @@ void DrawGameplayScreen(void)
     {
         return;
     }
-
+    
     BeginMode3D(camera);
     DrawPlane((Vector3) { 0.0f, -0.1f, 0.0f }, (Vector2) { 256.0f, 256.0f }, GRAY);
     DrawWalls();
@@ -1832,7 +1838,10 @@ void DrawGameplayScreen(void)
 
     if (level)
     {    
-        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE, GetFPS(), level->stepSize, strcmp(levelPack, EMPTY) == 0 ? "None set": levelPack, MAX_ELEMENTS - _elementCount };
+        uint8_t textureIndexRef = GetTetureIndex(_currentWallSelection);
+        uint8_t textureIndex = level->textureIndices[textureIndexRef];
+        Texture2D itemTexture = GetTextureFromElementType(_currentItemSelection);
+        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE, GetFPS(), level->stepSize, strcmp(levelPack, EMPTY) == 0 ? "None set": levelPack, MAX_ELEMENTS - _elementCount, wallTextures[textureIndex], itemTexture };
         EUI_DrawDebugData(&d, drawHelpText);
     }
     

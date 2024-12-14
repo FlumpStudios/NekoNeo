@@ -67,14 +67,15 @@ typedef struct {
     uint8_t stepSize;
     char* levelPack;
     int remainingElements;
-
+    Texture2D selectedWall;
+    Texture2D selectedItem;
 } DebugInfo;
 
 typedef struct {
     Vector3 position;
     int itemIndex;
     int mapArrayIndex;
-    enum EntityType entityType;    
+    enum EntityType entityType;
 } SelectedEntity;
 
 #endif

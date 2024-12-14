@@ -68,8 +68,6 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
 
     uint8_t y = Y_START;
 
-    DrawText("Camera status:", xpos, y, 10, TEXT_COLOUR);
-    y += SPACING;
     DrawText(TextFormat("- Level pack: %s", debugInfo->levelPack), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
     
@@ -79,13 +77,13 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
     DrawText(TextFormat("- Target: (%06.3f, %06.3f, %06.3f)", debugInfo->camera->target.x, debugInfo->camera->target.y, debugInfo->camera->target.z), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText(TextFormat("- Up: (%06.3f, %06.3f, %06.3f)", debugInfo->camera->up.x, debugInfo->camera->up.y, debugInfo->camera->up.z), xpos, y, 10, TEXT_COLOUR);
-    y += SPACING;
+    /*DrawText(TextFormat("- Up: (%06.3f, %06.3f, %06.3f)", debugInfo->camera->up.x, debugInfo->camera->up.y, debugInfo->camera->up.z), xpos, y, 10, TEXT_COLOUR);
+    y += SPACING;*/
 
     DrawText(TextFormat("- Map Array Index: %i", debugInfo->arrayCell), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
 
-    DrawText(TextFormat("- FLoor Height: %i", debugInfo->floorHeight), xpos, y, 10, TEXT_COLOUR);
+    DrawText(TextFormat("- Floor Height: %i", debugInfo->floorHeight), xpos, y, 10, TEXT_COLOUR);
     y += SPACING;
 
     DrawText(TextFormat("- Step Size: %i", debugInfo->stepSize), xpos, y, 10, TEXT_COLOUR);
@@ -97,6 +95,24 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
 
     DrawText(TextFormat("- Remaining Elements: %i", debugInfo->remainingElements), xpos, y, 10, TEXT_COLOUR);
     
+   
+    y += SPACING + 5;
+    
+    DrawLine(xpos - 10, y, xpos + 185, y, RECTANGLE_EDGE_COLOUR);
+
+    y += 5;
+
+    DrawText("- Currently selected wall", xpos, y + 10, 10, TEXT_COLOUR);
+    DrawTexture(debugInfo->selectedWall, xpos + 140, y, WHITE);
+    
+    y += SPACING + 21;
+
+    DrawText("- Currently selected item", xpos, y + 10, 10, TEXT_COLOUR);
+
+    DrawTexture(debugInfo->selectedItem, xpos + 140, y, WHITE);
+    
+    y += SPACING + 10;
+
     DrawRectangle(xpos -10, Y_START - 10, 195, y + 10, Fade(RECTANGLE_COLOR, RECTANGLE_ALPHA));
     DrawRectangleLines(xpos - 10, Y_START - 10, 195, y + 10, RECTANGLE_EDGE_COLOUR);
 }
