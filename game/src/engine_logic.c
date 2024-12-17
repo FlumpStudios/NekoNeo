@@ -33,6 +33,7 @@ static uint8_t _floorHeight;
 static UiMode drawHelpText = 1;
 static int finishScreen = 0;
 static int _currentWallSelection = 8;
+static int _currentWallHighlighted = 8;
 static int _currentItemSelection = 1;
 static int cameraMode = CAMERA_FREE;
 static SFG_Level* level;
@@ -696,9 +697,10 @@ void SetSelectionBlockLocation(void)
             selectionLocation.mapArrayIndex = GetMapIndeFromPosition(selectionLocation.position);
             if (foundEntityType == Entity_Type_Wall)
             {
+                _currentWallHighlighted = level->mapArray[selectionLocation.mapArrayIndex];
                 if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
                 {
-                    _currentWallSelection = level->mapArray[selectionLocation.mapArrayIndex];
+                    _currentWallSelection = _currentWallHighlighted;
                 }
             }
         }
@@ -736,7 +738,8 @@ void SetSelectionBlockLocation(void)
 
         if (_currentWallSelection > DOOR_MASK)
         {
-            _currentWallSelection = (_currentWallSelection + 7) & (~DOOR_MASK);
+            _currentWallHighlighted = (_currentWallSelection + 7) & (~DOOR_MASK);
+            _currentWallSelection = _currentWallHighlighted;
         }
     
 }
@@ -1204,6 +1207,7 @@ void ScrollUpEntities(void)
         {
             _currentWallSelection += 7;
         }
+        _currentWallHighlighted = _currentWallSelection;
 
         if (isDoor)
         {
@@ -1213,7 +1217,6 @@ void ScrollUpEntities(void)
         {
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
         }
-
         RefreshMap(true);
     }
     else if (selectionLocation.entityType == Entity_Type_Item)
@@ -1236,6 +1239,7 @@ void ScrollDownEntities(void)
         {
             _currentWallSelection -= 7;
         }
+        _currentWallHighlighted = _currentWallSelection;
 
         if (isDoor)
         {
@@ -1585,7 +1589,8 @@ void UpdateGameplayScreen(void)
                 _currentWallSelection -= (TILE_DICTIONARY_SIZE);
                 _currentWallSelection += 8;
             }
-            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+            _currentWallHighlighted = _currentWallSelection;
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallHighlighted;
             RefreshMap(true);
         }
         
@@ -1630,7 +1635,8 @@ void UpdateGameplayScreen(void)
                 _currentWallSelection += (TILE_DICTIONARY_SIZE);
                 _currentWallSelection -= 8;
             }
-            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+            _currentWallHighlighted = _currentWallSelection;
+            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallHighlighted;
             RefreshMap(true);
         }
         
