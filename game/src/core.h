@@ -69,6 +69,7 @@ typedef struct {
     int remainingElements;
     Texture2D selectedWall;
     Texture2D selectedItem;
+    bool isDoor;
 } DebugInfo;
 
 typedef struct {

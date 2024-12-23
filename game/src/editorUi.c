@@ -94,7 +94,6 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
     y += SPACING;
 
     DrawText(TextFormat("- Remaining Elements: %i", debugInfo->remainingElements), xpos, y, 10, TEXT_COLOUR);
-    
    
     y += SPACING + 5;
     
@@ -103,7 +102,14 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
     y += 5;
 
     DrawText("- Currently selected wall", xpos, y + 10, 10, TEXT_COLOUR);
+
     DrawTexture(debugInfo->selectedWall, xpos + 140, y, WHITE);
+
+    if (debugInfo->isDoor)
+    {    
+        DrawText("Door", xpos + 145, y + 10, 10, BLACK);
+        DrawText("Door", xpos + 144, y + 10, 10, WHITE);
+    }
     
     y += SPACING + 21;
 

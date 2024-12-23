@@ -734,14 +734,6 @@ void SetSelectionBlockLocation(void)
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
             RefreshMap(true);
         }
-        
-
-        if (_currentWallSelection > DOOR_MASK)
-        {
-            _currentWallHighlighted = (_currentWallSelection + 7) & (~DOOR_MASK);
-            _currentWallSelection = _currentWallHighlighted;
-        }
-    
 }
 
 void RemoveElement(uint16_t i)
@@ -1442,6 +1434,7 @@ void UpdateGameplayScreen(void)
                     RemoveElement(k);
                 }
             }
+            _currentWallSelection = level->mapArray[selectionLocation.mapArrayIndex];
             RefreshMap(true);
         }
     }
@@ -1847,7 +1840,7 @@ void DrawGameplayScreen(void)
         uint8_t textureIndexRef = GetTetureIndex(_currentWallSelection);
         uint8_t textureIndex = level->textureIndices[textureIndexRef];
         Texture2D itemTexture = GetTextureFromElementType(_currentItemSelection);
-        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE, GetFPS(), level->stepSize, strcmp(levelPack, EMPTY) == 0 ? "None set": levelPack, MAX_ELEMENTS - _elementCount, wallTextures[textureIndex], itemTexture };
+        DebugInfo d = { &camera,selectionLocation.mapArrayIndex, _floorHeight, level->ceilHeight == OUTSIDE_CEIL_VALUE, GetFPS(), level->stepSize, strcmp(levelPack, EMPTY) == 0 ? "None set": levelPack, MAX_ELEMENTS - _elementCount, wallTextures[textureIndex], itemTexture, _currentWallSelection > DOOR_MASK };
         EUI_DrawDebugData(&d, drawHelpText);
     }
     
