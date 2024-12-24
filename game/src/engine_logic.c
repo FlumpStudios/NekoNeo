@@ -1195,20 +1195,25 @@ void ScrollUpEntities(void)
         bool isDoor = level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK;
 
         _currentWallSelection--;
-        if ((_currentWallSelection) % 7 == 0)
-        {
-            _currentWallSelection += 7;
-        }
-        _currentWallHighlighted = _currentWallSelection;
+        
 
         if (isDoor)
         {
-            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection | DOOR_MASK;
+            if ((_currentWallSelection & ~DOOR_MASK) < 1)
+            {
+                _currentWallSelection = 7 | DOOR_MASK;
+            }
         }
         else
         {
-            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+            if ((_currentWallSelection) % 7 == 0)
+            {
+                _currentWallSelection += 7;
+            }
         }
+
+        level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+        _currentWallHighlighted = _currentWallSelection;
         RefreshMap(true);
     }
     else if (selectionLocation.entityType == Entity_Type_Item)
@@ -1227,22 +1232,26 @@ void ScrollDownEntities(void)
         bool isDoor = level->mapArray[selectionLocation.mapArrayIndex] > DOOR_MASK;
 
         _currentWallSelection++;
-        if ((_currentWallSelection - 1) % 7 == 0)
-        {
-            _currentWallSelection -= 7;
-        }
-        _currentWallHighlighted = _currentWallSelection;
+        
 
         if (isDoor)
         {
-            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection | DOOR_MASK;
+            if ((_currentWallSelection & ~DOOR_MASK) > 7)
+            {
+                _currentWallSelection = 1 | DOOR_MASK;
+            }
         }
         else
         {
-            level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
+            if ((_currentWallSelection - 1) % 7 == 0)
+            {
+                _currentWallSelection -= 7;
+            }
         }
+        level->mapArray[selectionLocation.mapArrayIndex] = _currentWallSelection;
 
 
+        _currentWallHighlighted = _currentWallSelection;
         RefreshMap(true);
     }
     else if (selectionLocation.entityType == Entity_Type_Item)
@@ -1253,6 +1262,17 @@ void ScrollDownEntities(void)
         _currentItemSelection = nextElement;
         RefreshMap(true);
     }
+}
+
+int getDoorIndexFromwall(int i)
+{
+    int j = 0;
+    while (i > 0)
+    {
+        i -= 7;
+        j++;
+    }
+    return (j - 1) * 7;
 }
 
 // Gameplay Screen Update logic
@@ -1421,9 +1441,10 @@ void UpdateGameplayScreen(void)
         if (selectionLocation.entityType == Entity_Type_Wall)
         {
             if (level->mapArray[selectionLocation.mapArrayIndex] < DOOR_MASK)
-            {                
+            {                                
                 int index = level->mapArray[selectionLocation.mapArrayIndex];                
-                level->mapArray[selectionLocation.mapArrayIndex] = (index % 7) | DOOR_MASK;
+                int m = getDoorIndexFromwall(index);               
+                level->mapArray[selectionLocation.mapArrayIndex] = (index - m) | DOOR_MASK;
             }
             else
             {

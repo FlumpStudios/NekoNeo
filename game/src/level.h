@@ -287,7 +287,7 @@ bool SaveLevel(SFG_Level *level, char* levelName)
     tempLevel->tileDictionary[11] = SFG_TD(tempLevel->floorHeight, tempLevel->ceilHeight, 3, 3); // 11
     tempLevel->tileDictionary[12] = SFG_TD(tempLevel->floorHeight, tempLevel->ceilHeight, 4, 4); // 12
     tempLevel->tileDictionary[13] = SFG_TD(tempLevel->floorHeight, tempLevel->ceilHeight, 5, 5); // 13
-    tempLevel->tileDictionary[14] = SFG_TD(tempLevel->floorHeight, tempLevel->ceilHeight, 6, 6); // 14 
+    tempLevel->tileDictionary[14] = SFG_TD(tempLevel->floorHeight, tempLevel->ceilHeight, 6, 6); // 14
 
     ushort textureIndex = 0;
     ushort heightIndex = tempLevel->stepSize;
