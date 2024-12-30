@@ -1210,6 +1210,7 @@ void ScrollUpEntities(void)
             {
                 _currentWallHighlighted = 7 | DOOR_MASK;
             }
+            _currentWallSelection = (_currentWallHighlighted & ~DOOR_MASK) + 7;
         }
         else
         {
@@ -1217,17 +1218,16 @@ void ScrollUpEntities(void)
             {
                 _currentWallHighlighted += 7;
             }
+            _currentWallSelection = _currentWallHighlighted;
         }
 
         level->mapArray[selectionLocation.mapArrayIndex] = _currentWallHighlighted;
-        _currentWallSelection = _currentWallHighlighted;
         RefreshMap(true);
     }
     else if (selectionLocation.entityType == Entity_Type_Item)
     {
         uint8_t previousElement = GetPreviousElementType(_currentItemSelection);
         level->elements[selectionLocation.itemIndex].type = previousElement;
-        _currentItemSelection = previousElement;
         RefreshMap(true);
     }
 }
@@ -1247,6 +1247,7 @@ void ScrollDownEntities(void)
             {
                 _currentWallHighlighted = 1 | DOOR_MASK;
             }
+            _currentWallSelection = (_currentWallHighlighted & ~DOOR_MASK) + 7;
         }
         else
         {
@@ -1254,10 +1255,9 @@ void ScrollDownEntities(void)
             {
                 _currentWallHighlighted -= 7;
             }
+            _currentWallSelection = _currentWallHighlighted;
         }
-        level->mapArray[selectionLocation.mapArrayIndex] = _currentWallHighlighted;
-        
-        _currentWallSelection = _currentWallHighlighted;
+        level->mapArray[selectionLocation.mapArrayIndex] = _currentWallHighlighted;         
 
         RefreshMap(true);
     }
