@@ -223,10 +223,10 @@ uint8_t SFG_loadLevelFromFile(SFG_Level* buffer, const char* level)
 
 void initLevel(SFG_Level* level)
 {
-    level->stepSize = 1;
+    level->stepSize = 2;
     level->doorLevitation = 0;
-    level->ceilHeight = 10;
-    level->floorHeight = 10;
+    level->ceilHeight = 16;
+    level->floorHeight = 16;
     level->ceilingColor = 5;
     level->backgroundImage = 1;
     level->doorTextureIndex = 1;
