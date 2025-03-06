@@ -1041,7 +1041,7 @@ void InitGameplayScreen(void)
 {
 
 #ifdef DEBUG
-    alphaDiscard = LoadShader(NULL, "C:/Projects/NekoNeo/game/src/shaders/alphaDiscard.fs");
+    alphaDiscard = LoadShader(NULL, "C:/Projects/NekoNeo/game/src/shaders/alphaDiscard.frag");
     
     level = MemAlloc(sizeof(SFG_Level));
 
@@ -1103,7 +1103,7 @@ void InitGameplayScreen(void)
     playerMarker = LoadModel("C:/Projects/NekoEngine/GameData/assets/PlayerStartPosition.obj");
 
 #else
-    alphaDiscard = LoadShader(NULL, "data/alphaDiscard.fs");
+    alphaDiscard = LoadShader(NULL, "data/alphaDiscard.frag");
 
     level = MemAlloc(sizeof(SFG_Level));
 
@@ -1226,8 +1226,10 @@ void ScrollUpEntities(void)
     }
     else if (selectionLocation.entityType == Entity_Type_Item)
     {
-        uint8_t previousElement = GetPreviousElementType(_currentItemSelection);
-        level->elements[selectionLocation.itemIndex].type = previousElement;
+        uint8_t t = _currentItemSelection;
+        uint8_t nextElement = GetPreviousElementType(t);
+        level->elements[selectionLocation.itemIndex].type = nextElement;
+        _currentItemSelection = nextElement;
         RefreshMap(true);
     }
 }
@@ -1604,13 +1606,13 @@ void UpdateGameplayScreen(void)
         // TODO: Do this properly.
         if (selectionLocation.entityType == Entity_Type_Wall) 
         {
-            _currentWallSelection += 7;
+            _currentWallHighlighted += 7;
             if (_currentWallSelection >= TILE_DICTIONARY_SIZE)
             {
-                _currentWallSelection -= (TILE_DICTIONARY_SIZE);
-                _currentWallSelection += 8;
+                _currentWallHighlighted -= (TILE_DICTIONARY_SIZE);
+                _currentWallHighlighted += 8;
             }
-            _currentWallHighlighted = _currentWallSelection;
+          
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallHighlighted;
             RefreshMap(true);
         }
@@ -1650,13 +1652,13 @@ void UpdateGameplayScreen(void)
         
         if (selectionLocation.entityType == Entity_Type_Wall)
         {
-            _currentWallSelection -= 7;
-            if (_currentWallSelection <= 7)
+            _currentWallHighlighted -= 7;
+            if (_currentWallHighlighted <= 7)
             {
-                _currentWallSelection += (TILE_DICTIONARY_SIZE);
-                _currentWallSelection -= 8;
+                _currentWallHighlighted += (TILE_DICTIONARY_SIZE);
+                _currentWallHighlighted -= 8;
             }
-            _currentWallHighlighted = _currentWallSelection;
+
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallHighlighted;
             RefreshMap(true);
         }
