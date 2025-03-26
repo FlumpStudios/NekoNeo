@@ -1,7 +1,10 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#define LOAD_DEBUG_LEVEL_ON_LOAD false
+
 #define EMPTY ""
+#define MAX_STATUS_MESSAGE_SIZE 100
 #define MAX_LEVEL_PACK_NAME 50
 #define MAX_SAVE_FILE_NAME 50
 #define DOOR_TEXTURE_INDEX 15

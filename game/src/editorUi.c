@@ -4,9 +4,22 @@
 #define Y_START 15
 #define SPACING 15
 #define RECTANGLE_ALPHA 0.25f
+#define STATUS_UPDATE_MESSAGE_LIFETIME 1.0f
 
 #include "editorUi.h"
 #include <stdint.h>
+
+static float timeOfLastStatusUpdate = 0.0f;
+static char statusMessage[MAX_STATUS_MESSAGE_SIZE + MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
+static Color statusMessagColor;
+
+static void renderStatusUpdate()
+{
+    if (GetTime() < timeOfLastStatusUpdate + STATUS_UPDATE_MESSAGE_LIFETIME)
+    {
+        DrawText(statusMessage, 15, 690, 20, statusMessagColor);
+    }
+}
 
 static void DrawControls()
 {
@@ -123,9 +136,16 @@ static void DrawCameraInfo(DebugInfo* debugInfo)
     DrawRectangleLines(xpos - 10, Y_START - 10, 195, y + 10, RECTANGLE_EDGE_COLOUR);
 }
 
+void EUI_DrawStatusUpdate(char* output, Color color)
+{
+	statusMessagColor = color;
+    timeOfLastStatusUpdate = GetTime();
+    strcpy(statusMessage, output);
+}
 
 void EUI_DrawDebugData(DebugInfo* debugInfo, UiMode mode)
 {
+    renderStatusUpdate();
     if (mode == Off) { return;}
 
     if (mode > Off)

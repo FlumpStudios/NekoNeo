@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <assert.h>f
 #include "raylib.h"
 #include "engine.h"
 #include "level.h"
@@ -44,7 +44,7 @@ static char currentLevel[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME] = { 0 };
 static LevelHistory _levelHistory;
 static size_t _historySize = INITIAL_HISTORY_BUFFER_SIZE;
 
-Mode currentEditorMode = Mode_Editor;
+Mode currentEditorMode = Mode_Console;
 EditorRenderMode currentRenderMode = RenerMode_Textured;
 
 Texture2D wallTextures[WALL_TEXTURE_COUNT];
@@ -1114,7 +1114,10 @@ void InitGameplayScreen(void)
         memset(level, 0, sizeof(SFG_Level));
         initLevel(level);
         char buffer[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
-        GetLevelFilePath(buffer, DEBUG_LEVEL);
+        if (LOAD_DEBUG_LEVEL_ON_LOAD)
+        {        
+            GetLevelFilePath(buffer, DEBUG_LEVEL);
+        }
 
         if (!SFG_loadLevelFromFile(level, buffer))
         {
@@ -1184,6 +1187,24 @@ void InitGameplayScreen(void)
     {       
         memcpy(&_levelHistory.history[0], level, sizeof(SFG_Level));
     }
+
+    // Set up the initial console screen
+    strcpy(_consoleHistory[2].Text,"Welome to Neko Neo!");
+    
+	if (strcmp(levelPack, EMPTY) == 0)
+	{
+		strcpy(_consoleHistory[1].Text, "No level pack has been set");
+        strcpy(_consoleHistory[0].Text, "use \"setlevelpack [pack name]\" to set you level pack");
+	}
+    else
+    {
+	    char levelpackBuffer[MAX_LEVEL_PACK_NAME  + 50];
+        sprintf(levelpackBuffer,"The current level pack is set to %s", levelPack);
+        strcpy(_consoleHistory[1].Text, levelpackBuffer);
+        strcpy(_consoleHistory[0].Text, "Use \"loadlevel [levelname]\" to load a level or press escape to start making a new one");
+    }
+
+    currentEditorMode = Mode_Console;
 
     _levelReady = true;
 }
@@ -1273,7 +1294,7 @@ void ScrollDownEntities(void)
     }
 }
 
-int getDoorIndexFromwall(int i)
+int GetDoorIndexFromwall(int i)
 {
     int j = 0;
     while (i > 0)
@@ -1299,9 +1320,18 @@ void UpdateGameplayScreen(void)
     if ((IsMouseButtonPressed(MOUSE_BUTTON_MIDDLE) || IsKeyPressed(KEY_F)) && currentEditorMode == Mode_Editor)
     {        
         _focusedMode = !_focusedMode;
-        _focusedMode ? EnableCursor() : DisableCursor();
-    }
 
+        if (_focusedMode)
+        {
+            EUI_DrawStatusUpdate("Cursor unlocked", WHITE);
+            EnableCursor();
+        }
+        else
+        {
+            EUI_DrawStatusUpdate("Cursor locked", WHITE);        
+            DisableCursor();
+        }
+    }
 
 
     if (IsKeyPressed(KEY_ESCAPE))
@@ -1329,8 +1359,7 @@ void UpdateGameplayScreen(void)
         {
             _levelHistory.currentIndex--;
             memcpy(level, &_levelHistory.history[_levelHistory.currentIndex], sizeof(SFG_Level));
-            RefreshMap(false);
-
+            RefreshMap(false);            
         }
     }
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Y))
@@ -1343,7 +1372,6 @@ void UpdateGameplayScreen(void)
             RefreshMap(false);            
         }
     }
-
 
     static bool isPlayerRotatingRight = false;
     if (IsKeyDown(KEY_F6))
@@ -1408,8 +1436,7 @@ void UpdateGameplayScreen(void)
                 uint8_t x = 0;
                 uint8_t y = 0;
 
-                GetEntityPositionFromPosition(selectionLocation.position, &x, &y);
-                
+                GetEntityPositionFromPosition(selectionLocation.position, &x, &y);                
                 
                 int index = DoesPositionHaveElement(selectionLocation.position);                
                 bool incCounter = false;
@@ -1452,7 +1479,7 @@ void UpdateGameplayScreen(void)
             if (level->mapArray[selectionLocation.mapArrayIndex] < DOOR_MASK)
             {                                
                 int index = level->mapArray[selectionLocation.mapArrayIndex];                
-                int m = getDoorIndexFromwall(index);               
+                int m = GetDoorIndexFromwall(index);               
                 level->mapArray[selectionLocation.mapArrayIndex] = (index - m) | DOOR_MASK;
             }
             else
@@ -1480,14 +1507,18 @@ void UpdateGameplayScreen(void)
 
             level->playerStart[0] = col;
             level->playerStart[1] = row;
+            
+            char startBuffer[100];
+            sprintf(startBuffer, "Player start position set to X:%u, Y:%u", col, row);
+            EUI_DrawStatusUpdate(startBuffer, WHITE);
 
             char buffer[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
             GetLevelFilePath(buffer, DEBUG_LEVEL);
 
-
             if (SaveLevel(level, buffer))
             {
-                TraceLog(LOG_INFO, "Level saved on player position update");
+				TraceLog(LOG_INFO, "Level saved on player position update");
+
             }
             else
             {
@@ -1524,6 +1555,7 @@ void UpdateGameplayScreen(void)
             camera.fovy = 65.f;
             PreviousMode = currentEditorMode;
             currentEditorMode = Mode_Editor;
+            EUI_DrawStatusUpdate("3D View", WHITE);
         }
         else
         {
@@ -1534,6 +1566,7 @@ void UpdateGameplayScreen(void)
             camera.fovy = 65.f;
             was_cursor_hidden ? HideCursor() : ShowCursor();
             currentEditorMode = PreviousMode;
+            EUI_DrawStatusUpdate("Map View", WHITE);
         }
     }
 
@@ -1560,7 +1593,15 @@ void UpdateGameplayScreen(void)
 
     if (IsKeyPressed(KEY_G))
     {
-        currentEditorMode = (currentEditorMode == Mode_Editor ? Mode_Game : Mode_Editor);
+        currentEditorMode = (currentEditorMode == Mode_Editor ? Mode_Game : Mode_Editor);        
+        if (currentEditorMode == Mode_Editor)
+        {
+			EUI_DrawStatusUpdate("Editor Mode", WHITE);
+		}
+		else
+		{
+			EUI_DrawStatusUpdate("Game Mode", WHITE);
+        }
     }
 
     if (IsKeyPressed(KEY_H))
@@ -1572,6 +1613,35 @@ void UpdateGameplayScreen(void)
         }
     }
 
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_S))
+    {
+		Color c = WHITE;
+        char buffer[MAX_STATUS_MESSAGE_SIZE + MAX_SAVE_FILE_NAME];
+
+        if (strlen(currentLevel) == 0)
+        {
+            strcpy(buffer, "Error: No level has been loaded");            
+			c = RED;            
+        }
+        else if (strlen(levelPack) == 0)
+        {   
+            strcpy(buffer, "Error: No level pack has been loaded");
+            c = RED;            
+        }
+
+        else if (SaveLevel(level, currentLevel))
+        {
+            sprintf(buffer, "Level saved  at: %s", currentLevel);            
+			c = WHITE;
+        }
+        else
+        {
+            sprintf(buffer, "Error saving level");
+            c = RED;
+        }
+        EUI_DrawStatusUpdate(buffer, WHITE);
+    }
+    
     if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_PERIOD))
     {
         level->floorHeight++;
@@ -1615,8 +1685,7 @@ void UpdateGameplayScreen(void)
           
             level->mapArray[selectionLocation.mapArrayIndex] = _currentWallHighlighted;
             RefreshMap(true);
-        }
-        
+        }        
     }
 
     if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_COMMA))
@@ -1713,6 +1782,18 @@ void UpdateGameplayScreen(void)
         else
         {
             currentRenderMode = 0;
+        }
+        switch (currentRenderMode)
+        {
+		case 0:
+			EUI_DrawStatusUpdate("Render Mode: Normal", WHITE);
+			break;
+		case 1:                
+			EUI_DrawStatusUpdate("Render Mode: Wireframe", WHITE);
+            break;
+		case 2:
+			EUI_DrawStatusUpdate("Render Mode: Entity types", WHITE);
+			break;        
         }
     }
 
