@@ -491,6 +491,16 @@ void HandleConsoleInput(void)
         name[letterCount] = '\0';
     }
 
+
+    if (IsKeyPressed(KEY_UP))
+    {
+        if (_consoleHistory)
+        {           
+            strcpy(name, _consoleHistory[0].Text);
+            letterCount = strlen(name);
+        }
+    }
+
     else if (IsKeyPressed(KEY_ENTER))
     {
         for (size_t i = CONSOLE_HISTORY_SIZE - 1; i > 0; i--)
@@ -1201,14 +1211,14 @@ void InitGameplayScreen(void)
 	    char levelpackBuffer[MAX_LEVEL_PACK_NAME  + 50];
         sprintf(levelpackBuffer,"The current level pack is set to %s", levelPack);
         strcpy(_consoleHistory[1].Text, levelpackBuffer);
-        strcpy(_consoleHistory[0].Text, "Use \"loadlevel [levelname]\" to load a level or press escape to start making a new one");
+        strcpy(_consoleHistory[0].Text, "Use \"loadlevel [levelname]\" to load a level or press escape to close the console and start making a new one.");
     }
 
     currentEditorMode = Mode_Console;
 
     _levelReady = true;
 }
-
+  
 void UpdateFloorHeight(void)
 {
     auto e = level->mapArray[selectionLocation.mapArrayIndex];
@@ -1304,7 +1314,7 @@ int GetDoorIndexFromwall(int i)
     }
     return (j - 1) * 7;
 }
-
+x
 // Gameplay Screen Update logic
 void UpdateGameplayScreen(void)
 {
