@@ -173,7 +173,7 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
         {
             auto col = atoi(&inputString[11]);
 
-            if (col < 1) {
+            if (col < 0) {
                 strcpy(responseBuffer, "Please enter a valid value");
             }
             else if (col > MAX_FLOOR_AND_CEIL_COLOUR)
@@ -1314,7 +1314,7 @@ int GetDoorIndexFromwall(int i)
     }
     return (j - 1) * 7;
 }
-x
+
 // Gameplay Screen Update logic
 void UpdateGameplayScreen(void)
 {
@@ -1587,7 +1587,9 @@ void UpdateGameplayScreen(void)
         // RefreshMap(true);
     }
 
-    if (IsKeyPressed(KEY_F11))
+    if (IsKeyPressed(KEY_F11) ||
+        ((IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_ENTER)) && IsKeyPressed(KEY_ENTER))
+        )
     {
         if(IsWindowFullscreen)            
         { 
