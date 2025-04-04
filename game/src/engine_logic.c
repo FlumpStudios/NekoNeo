@@ -1565,7 +1565,7 @@ void UpdateGameplayScreen(void)
             camera.fovy = 65.f;
             PreviousMode = currentEditorMode;
             currentEditorMode = Mode_Editor;
-            EUI_DrawStatusUpdate("3D View", WHITE);
+            EUI_DrawStatusUpdate("Map View", WHITE);
         }
         else
         {
@@ -1576,7 +1576,7 @@ void UpdateGameplayScreen(void)
             camera.fovy = 65.f;
             was_cursor_hidden ? HideCursor() : ShowCursor();
             currentEditorMode = PreviousMode;
-            EUI_DrawStatusUpdate("Map View", WHITE);
+            EUI_DrawStatusUpdate("3D View", WHITE);
         }
     }
 
