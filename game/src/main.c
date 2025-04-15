@@ -7,6 +7,12 @@
     #include <emscripten/emscripten.h>
 #endif
 
+#ifdef DEBUG
+#define FONT_LOCATION "C:\\Projects\\NekoNeo\\game\\src\\fonts\\mecha.png"
+#else
+#define FONT_LOCATION "fonts\\mecha.png"
+#endif // DEBUG
+
 Font font = { 0 };
 
 static void UpdateDrawFrame(void);         
@@ -25,7 +31,7 @@ int main(int argc, char* argv[])
         }
     }
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, PROJECT_NAME);
-    font = LoadFont("resources/mecha.png");    
+    font = LoadFont(FONT_LOCATION);
     InitGameplayScreen();
   
 #if defined(PLATFORM_WEB)

@@ -14,6 +14,7 @@
 #include <string.h>
 #include "raymath.h"
 #include <stdio.h>
+#include "drawTextUtils.h"
 #include <sys/stat.h>
 
 #ifdef _WIN32
@@ -530,16 +531,16 @@ void RenderConsole(void)
     Rectangle textBox = {0,  screenHeight / 1.5f, screenWidth, screenHeight / 3 };
     DrawRectangleRec(textBox, TRANS_RED);
     DrawRectangleLines((int)textBox.x, (int)textBox.y, (int)textBox.width, (int)textBox.height, WHITE);    
-    DrawText(name, (int)textBox.x + 5, inputY, CONSOLE_FONT_SIZE, WHITE);
+    drawTextWithfont(font, name, (int)textBox.x + 5, inputY, CONSOLE_FONT_SIZE, WHITE);
 
     for (size_t i = 0; i < CONSOLE_HISTORY_SIZE; i++)
     {
         auto y = (inputY - (CONSOLE_FONT_SIZE * 2) - (i * CONSOLE_FONT_SIZE * 2 + 5));
 
-        DrawText(_consoleHistory[i].Text, (int)textBox.x + 5, y, CONSOLE_FONT_SIZE, LIGHTGRAY);
+        drawTextWithfont(font, _consoleHistory[i].Text, (int)textBox.x + 5, y, CONSOLE_FONT_SIZE, LIGHTGRAY);
         char buffer[MAX_INPUT_CHARS + 2];
         sprintf(buffer, "\n%s", _consoleHistory[i].ResponseMessage);
-        DrawText(buffer, (int)textBox.x + 5, y, CONSOLE_FONT_SIZE, YELLOW);
+        drawTextWithfont(font, buffer, (int)textBox.x + 5, y, CONSOLE_FONT_SIZE, YELLOW);
     }
         
     if (letterCount < MAX_INPUT_CHARS)
@@ -550,7 +551,7 @@ void RenderConsole(void)
         {
             framesCounter = 0;
         }
-        if (((framesCounter / 20) % 2) == 0) DrawText("_", (int)textBox.x + 8 + MeasureText(name, CONSOLE_FONT_SIZE), inputY, CONSOLE_FONT_SIZE, WHITE);
+        if (((framesCounter / 20) % 2) == 0) drawTextWithfont(font, "_", (int)textBox.x + 8 + MeasureTextEx(font, name, CONSOLE_FONT_SIZE, FONT_SPACING).x, inputY, CONSOLE_FONT_SIZE, WHITE);
     }
 }
 
