@@ -416,6 +416,18 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
             SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         }
 
+        char buffer[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
+        GetLevelFilePath(buffer, DEBUG_LEVEL);
+
+        if (SaveLevel(level, buffer))
+        {
+            TraceLog(LOG_INFO, "Level saved on test hd game");
+        }
+        else
+        {
+            TraceLog(LOG_ERROR, "Error saving level to file");
+        }
+
         char exeLocation[MAX_LEVEL_PACK_NAME + 20];
 
         if (levelPack == EMPTY)
@@ -430,7 +442,45 @@ void ConsoleQuery(const char* query, char* responseBuffer, size_t size)
 
         system(exeLocation);
     }
-    else if (strncmp(inputString, "PREVIEW", 4) == 0)
+    else if (strncmp(inputString, "HDTEST", 6) == 0)
+    {
+
+#ifdef  DEBUG
+        strcpy(responseBuffer, "Map testing current disabled in debug");
+        return;
+#endif
+        if (IsWindowFullscreen)
+        {
+            SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+        }
+
+        char buffer[MAX_LEVEL_PACK_NAME + MAX_SAVE_FILE_NAME];
+        GetLevelFilePath(buffer, DEBUG_LEVEL);
+
+        if (SaveLevel(level, buffer))
+        {
+            TraceLog(LOG_INFO, "Level saved on test hd game");
+        }
+        else
+        {
+            TraceLog(LOG_ERROR, "Error saving level to file");
+        }
+
+        char exeLocation[MAX_LEVEL_PACK_NAME + 22];
+
+        if (levelPack == EMPTY)
+        {
+            sprintf(exeLocation, "RuynHd.exe LevelPack=original -windowed -resy=720 -resx=1280 debugLevel=level99");
+        }
+        else
+        {
+            sprintf(exeLocation, "RuynHd.exe LevelPack=%s -windowed -resy=720 -resx=1280 debugLevel=level99", levelPack);
+        }
+
+
+        system(exeLocation);
+        }
+    else if (strncmp(inputString, "PREVIEW", 7) == 0)
     {
 
 #ifdef  DEBUG
