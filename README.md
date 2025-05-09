@@ -1,3 +1,4 @@
+
 # Neko Neo
 
 ## What is it?
@@ -45,6 +46,33 @@ To place a door, highlight a wall and press `T`. This will turn the block into a
 To add a lock to the door, press `1` (Red), `2` (Green), or `3` (Blue) while highlighting a door. You will see a lock icon appear above the wall. To remove a key, press `0` on the highlighted block.  
 To place a key, cycle through the items until you see the corresponding key card.  
 You can set the height of the doors by highlighting a door block and cycling through using `,` and `.`. As mentioned before, to keep the file size as small as possible, this can currently only be done on a global level, so all the doors must have the same height throughout the level. This is one of the more egregious limitations of the engine.
+
+### Floor and ceilings
+
+In **Ruyn Classic**, you can use the commands `SETCEILCOL` and `SETFLOORCOL` to set the ceiling and floor colours, respectively.
+
+In **Ruyn HD**, things work a little differently:
+
+- There's only **one ceiling style**, but you can make a level appear **outdoors** by setting `SETCEILCOL` to `2` (yes, it's a bit arbitrary).
+
+#### Floor Styles
+
+Ruyn HD offers **6 floor styles**, each linked to a base index:
+
+- `0` = Diamond pattern  
+- `1` = Concrete  
+- `2` = Grass  
+- `3` = Dark brick  
+- `4` = Rust  
+- `5` = Rubble
+
+These floor styles **loop in sequence**. For example:
+
+- Setting `SETFLOORCOL` to `6` gives you the Diamond pattern again  
+- `7` = Concrete  
+- `8` = Grass  
+- …and so on
+
 
 ### Player start position
 To place the player’s start position, highlight the position where you would like the player to start and press `P`.  
@@ -106,7 +134,8 @@ To load a level, type `load [Your Level Name]` into the console.
 - `SETBACKGROUND [Background number]` - Set the current background number  
 - `STEPSIZE` - Check the current global step size  
 - `SETSTEPSIZE [Step size]` - Set the global step size  
-- `TEST` - Run the level  
+- `TEST` - Run the level in Ruyn Classic
+- `HDTEST` - Run the level in Ruyn HD
 - `PREVIEW` - Preview the level in the game engine  
 - `QUIT` - Close the editor  
 
