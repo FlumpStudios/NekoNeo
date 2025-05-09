@@ -49,15 +49,15 @@ You can set the height of the doors by highlighting a door block and cycling thr
 
 ### Floor and ceilings
 
-In **Ruyn Classic**, you can use the commands `SETCEILCOL` and `SETFLOORCOL` to set the ceiling and floor colours, respectively.
+For **Ruyn Classic**, you can use the commands `SETCEILCOL` and `SETFLOORCOL` to set the ceiling and floor colours, respectively.
 
-In **Ruyn HD**, things work a little differently:
+For **Ruyn HD**, things work a little differently:
 
 - There's only **one ceiling style**, but you can make a level appear **outdoors** by setting `SETCEILCOL` to `2` (yes, it's a bit arbitrary).
 
 #### Floor Styles
 
-Ruyn HD offers **6 floor styles**, each linked to a base index:
+Ruyn HD offers **6 floor styles**, each linked to the floor colour value:
 
 - `0` = Diamond pattern  
 - `1` = Concrete  
