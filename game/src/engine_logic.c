@@ -1740,7 +1740,7 @@ void UpdateGameplayScreen(void)
         if (selectionLocation.entityType == Entity_Type_Wall) 
         {
             _currentWallHighlighted += 7;
-            if (_currentWallSelection >= TILE_DICTIONARY_SIZE)
+            if (_currentWallHighlighted >= TILE_DICTIONARY_SIZE)
             {
                 _currentWallHighlighted -= (TILE_DICTIONARY_SIZE);
                 _currentWallHighlighted += 8;
